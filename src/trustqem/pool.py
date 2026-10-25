@@ -2,9 +2,11 @@
 
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
+from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_aer import AerSimulator
 
@@ -51,8 +53,13 @@ def simulate_pool(
     observable_labels: list[str],
     sign_table: np.ndarray,
     random_generator: np.random.Generator,
+    prepare: Callable[[QuantumCircuit, float], QuantumCircuit] | None = None,
 ) -> SimulatedPool:
-    """Ideal values from the statevector; shot-sampled values at every noise scale from the noisy simulators."""
+    """Ideal values from the statevector; shot-sampled values at every noise scale from the noisy simulators.
+
+    `prepare(circuit, scale)` turns the logical circuit into what actually runs at that scale (e.g. transpiled and
+    gate-folded). Ideal values always come from the logical circuit.
+    """
     observable_weights = [sum(1 for character in label if character != "I") for label in observable_labels]
     probabilities, row_index, row_features, row_noisy, row_ideal = [], [], [], [], []
     start_time = time.time()
@@ -60,7 +67,8 @@ def simulate_pool(
     for circuit_index, record in enumerate(records):
         ideal_values = ideal_expectation_values(record.circuit, observables)
         per_scale = np.array([
-            sampled_probabilities(record.circuit, simulators[scale], config.shots_per_circuit, random_generator)
+            sampled_probabilities(record.circuit if prepare is None else prepare(record.circuit, scale),
+                                  simulators[scale], config.shots_per_circuit, random_generator)
             for scale in config.noise_scale_factors])                          # (scales, 2**n)
         noisy_values = per_scale @ sign_table.T                                 # (scales, observables)
         probabilities.append(per_scale)

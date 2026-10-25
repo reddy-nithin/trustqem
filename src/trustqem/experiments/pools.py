@@ -2,6 +2,7 @@
 
 import logging
 import pickle
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -39,6 +40,13 @@ class ExperimentPools:
     monday_twins: dict[int, SimulatedPool]                 # by non-Clifford count
     tuesday: dict[str, SimulatedPool]                      # by scenario
     tuesday_twins: dict[tuple[str, int], SimulatedPool]    # by (scenario, non-Clifford count)
+    conditions: str = ""                                    # description of the device states, to validate caches
+
+
+def _conditions(monday_condition: NoiseCondition, scenarios: Mapping[str, NoiseCondition],
+                sizes: PoolSizes) -> str:
+    """Text description of every device state the pools are simulated on."""
+    return repr((monday_condition, [scenarios[name] for name in sizes.scenarios]))
 
 
 def _twins(records: list[CircuitRecord], keep: int, rng: np.random.Generator) -> list[CircuitRecord]:
@@ -46,8 +54,12 @@ def _twins(records: list[CircuitRecord], keep: int, rng: np.random.Generator) ->
     return [build_clifford_twin(record, keep, rng) for record in records]
 
 
-def build_pools(config: ExperimentConfig, sizes: PoolSizes) -> ExperimentPools:
-    """Simulate every pool. The same Tuesday circuits are used in every scenario, so scenarios are paired."""
+def build_pools(config: ExperimentConfig, sizes: PoolSizes, monday_condition: NoiseCondition = MONDAY,
+                scenarios: Mapping[str, NoiseCondition] = DRIFT_SCENARIOS) -> ExperimentPools:
+    """Simulate every pool. The same Tuesday circuits are used in every scenario, so scenarios are paired.
+
+    Any condition with `build_simulators` and `prepare_circuit` works (noise.NoiseCondition, device.DeviceCondition).
+    """
     rng = np.random.default_rng(config.random_seed)
     labels = build_observable_labels(config.qubit_count)
     observables = [SparsePauliOp(label) for label in labels]
@@ -55,38 +67,42 @@ def build_pools(config: ExperimentConfig, sizes: PoolSizes) -> ExperimentPools:
 
     def run(records: list[CircuitRecord], condition: NoiseCondition, tag: str) -> SimulatedPool:
         return simulate_pool(records, tag, condition.build_simulators(config), config, observables, labels,
-                             sign_table, rng)
+                             sign_table, rng, prepare=condition.prepare_circuit)
 
     def random_records(count: int) -> list[CircuitRecord]:
         return build_random_records(count, config.qubit_count, config.max_layers, config.cx_probability_per_pair,
                                     rng)
 
-    monday = run(random_records(sizes.monday_circuits), MONDAY, "monday")
+    monday = run(random_records(sizes.monday_circuits), monday_condition, "monday")
     twin_sources = random_records(sizes.monday_twin_sources)
-    monday_twins = {keep: run(_twins(twin_sources, keep, rng), MONDAY, f"monday_twins_k{keep}")
+    monday_twins = {keep: run(_twins(twin_sources, keep, rng), monday_condition, f"monday_twins_k{keep}")
                     for keep in sizes.twin_non_clifford_counts}
 
     tuesday_records = random_records(sizes.tuesday_circuits)
     tuesday_twin_records = {keep: _twins(tuesday_records, keep, rng) for keep in sizes.twin_non_clifford_counts}
     tuesday, tuesday_twins = {}, {}
     for scenario in sizes.scenarios:
-        condition = DRIFT_SCENARIOS[scenario]
+        condition = scenarios[scenario]
         tuesday[scenario] = run(tuesday_records, condition, f"tuesday_{scenario}")
         for keep, twin_records in tuesday_twin_records.items():
             tuesday_twins[(scenario, keep)] = run(twin_records, condition, f"tuesday_{scenario}_twins_k{keep}")
-    return ExperimentPools(config, sizes, sign_table, monday, monday_twins, tuesday, tuesday_twins)
+    return ExperimentPools(config, sizes, sign_table, monday, monday_twins, tuesday, tuesday_twins,
+                           _conditions(monday_condition, scenarios, sizes))
 
 
-def load_or_build_pools(config: ExperimentConfig, sizes: PoolSizes, cache_path: Path) -> ExperimentPools:
+def load_or_build_pools(config: ExperimentConfig, sizes: PoolSizes, cache_path: Path,
+                        monday_condition: NoiseCondition = MONDAY,
+                        scenarios: Mapping[str, NoiseCondition] = DRIFT_SCENARIOS) -> ExperimentPools:
     """Reuse cached pools if they were built with the same settings, otherwise simulate and cache."""
     if cache_path.exists():
         with open(cache_path, "rb") as cache_file:
             cached: ExperimentPools = pickle.load(cache_file)
-        if cached.config == config and cached.sizes == sizes:
+        expected = _conditions(monday_condition, scenarios, sizes)
+        if cached.config == config and cached.sizes == sizes and getattr(cached, "conditions", "") == expected:
             logger.info("loaded cached pools from %s", cache_path)
             return cached
         logger.info("cache settings differ, rebuilding pools")
-    pools = build_pools(config, sizes)
+    pools = build_pools(config, sizes, monday_condition, scenarios)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     with open(cache_path, "wb") as cache_file:
         pickle.dump(pools, cache_file)
