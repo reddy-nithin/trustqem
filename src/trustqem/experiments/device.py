@@ -209,9 +209,13 @@ def run(profile_name: str, results_root: Path) -> Path:
     plot_coverage_by_scenario(summary, profile.alpha, headline_count).savefig(
         output_dir / "coverage_by_scenario.png", dpi=200)
     plot_recalibration_budget(summary, profile.alpha).savefig(output_dir / "recalibration_budget.png", dpi=200)
-    verdict_path = output_dir / "verdict.md"
-    write_verdict(summary, profile.alpha, verdict_path,
-                  title="Verdict, device track (Amendment 2, docs/HYPOTHESES.md)")
-    extra = _headline_lines(summary, list(profile.sizes.scenarios), headline_count) + _budget_lines(budget)
-    verdict_path.write_text(verdict_path.read_text() + "\n".join(extra) + "\n")
+    write_device_verdict(summary, budget, profile, output_dir / "verdict.md")
     return output_dir
+
+
+def write_device_verdict(summary: dict, budget: dict, profile: DriftProfile, path: Path) -> None:
+    """The pre-registered verdict, then the fixed cells and the hardware budget."""
+    write_verdict(summary, profile.alpha, path, title="Verdict, device track (Amendment 2, docs/HYPOTHESES.md)")
+    headline_count = 100 if 100 in profile.recalibration_counts else max(profile.recalibration_counts)
+    extra = _headline_lines(summary, list(profile.sizes.scenarios), headline_count) + _budget_lines(budget)
+    path.write_text(path.read_text() + "\n".join(extra) + "\n")
