@@ -12,6 +12,7 @@ dependencies = [
     "numpy>=2.5.4",
     "qiskit>=2.0",
     "qiskit-aer>=0.17",
+    "qiskit-ibm-runtime>=0.51.0",
     "scikit-learn>=1.5",
     "scipy>=1.18.1",
 ]
