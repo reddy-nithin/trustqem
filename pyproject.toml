@@ -1,0 +1,41 @@
+[project]
+name = "trustqem"
+version = "0.1.0"
+description = "Learned quantum error mitigation with conformal error bars that survive hardware drift"
+readme = "README.md"
+authors = [
+    { name = "Nithin Reddy", email = "reddy.nithin.0331@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.4",
+    "qiskit>=2.0",
+    "qiskit-aer>=0.17",
+    "scikit-learn>=1.5",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.6,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.4.0",
+    "jupyter>=1.1.1",
+    "nbconvert>=7.17.2",
+    "pytest>=9.1.1",
+    "ruff>=0.17.2",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: runs a simulation that takes more than a few seconds"]
+addopts = "-m 'not slow'"

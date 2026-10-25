@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.env
+.pytest_cache/
+results/*.pkl
+.DS_Store
+# agent files stay local
+CLAUDE.md
+AGENTS.md
+.claude/

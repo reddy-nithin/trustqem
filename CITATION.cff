@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "TrustQEM: learned quantum error mitigation with conformal error bars that survive hardware drift"
+authors:
+  - family-names: Reddy
+    given-names: Nithin
+    affiliation: University of Missouri-Kansas City
+version: 0.1.0
+date-released: 2026-11-08
+license: MIT
+repository-code: "https://github.com/reddy-nithin/trustqem"
