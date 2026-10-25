@@ -11,3 +11,4 @@ results/**/smoke/
 CLAUDE.md
 AGENTS.md
 .claude/
+results/hardware/dryrun/
