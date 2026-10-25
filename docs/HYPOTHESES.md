@@ -152,7 +152,7 @@ simulated data?
 - H2-hw: frozen intervals cover less than 0.87 on hardware in at least one session.
 - H3-hw (primary), judged per session: R1W at K = 60 reaches coverage within 3 points of 0.90, with mean width under
   2x the oracle's at K = 60. Also reported for each session: whether the 95% interval of R1W's coverage contains
-  0.90, and the same numbers at K = 25. With 60 test circuits (420 rows) the 95% interval is about ±4 points wide, so
+  0.90, and the same numbers at K = 25. With 60 test circuits (420 rows) the 95% interval is about ±5 points wide, so
   a pass is evidence, not proof, and a fail by less than that margin is reported as inconclusive rather than as a
   clear failure.
 - R1W is exactly as frozen in Amendment 1 (shift features, degree-2 logistic regression, weights clipped to
@@ -167,4 +167,5 @@ is tested. If only S1 completes before the poster deadline, S1 alone is reported
 
 **Disclosure.** Before this amendment the full pipeline was rehearsed on FakeFez in local mode (results in the
 git-ignored `results/hardware/dryrun/`) to check that every step runs. Its numbers are simulated, not hardware
-data; nothing above is changed because of them.
+data. One descriptive number was corrected from it: the expected width of R1W's 95% coverage interval, first
+written as ±4 points, is ±5 in the rehearsal (0.833 to 0.931). No rule, method or threshold changed.
