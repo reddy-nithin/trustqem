@@ -7,6 +7,7 @@ noise scale factor, because ZNE needs the same device at 1x, 2x and 3x noise.
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from qiskit import QuantumCircuit
 from qiskit_aer import AerSimulator
 from qiskit_aer.noise import NoiseModel, ReadoutError, depolarizing_error, thermal_relaxation_error
 
@@ -61,6 +62,10 @@ class NoiseCondition:
         """One density-matrix simulator per ZNE scale factor."""
         return {scale: AerSimulator(method="density_matrix", noise_model=self.build_noise_model(scale, config))
                 for scale in config.noise_scale_factors}
+
+    def prepare_circuit(self, circuit: QuantumCircuit, scale: float) -> QuantumCircuit:
+        """The circuit runs as written: here the noise model, not the circuit, carries the noise scale."""
+        return circuit
 
 
 def _thermal_error(gate_microseconds: float, qubit_count: int):
