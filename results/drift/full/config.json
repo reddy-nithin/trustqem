@@ -1,0 +1,68 @@
+{
+  "config": {
+    "random_seed": 2026,
+    "qubit_count": 4,
+    "number_of_circuits": 400,
+    "max_layers": 12,
+    "cx_probability_per_pair": 0.5,
+    "one_qubit_depolarizing_rate": 0.003,
+    "two_qubit_depolarizing_rate": 0.03,
+    "noise_scale_factors": [
+      1.0,
+      2.0,
+      3.0
+    ],
+    "shots_per_circuit": 1000,
+    "test_fraction": 0.25,
+    "gradient_boosting_trees": 300,
+    "gradient_boosting_depth": 3,
+    "feature_names": [
+      "layer_count",
+      "one_qubit_gate_count",
+      "cx_count",
+      "observable_weight"
+    ]
+  },
+  "profile": {
+    "sizes": {
+      "monday_circuits": 500,
+      "monday_twin_sources": 200,
+      "tuesday_circuits": 400,
+      "twin_non_clifford_counts": [
+        0,
+        2,
+        4,
+        8
+      ],
+      "scenarios": [
+        "D0_no_drift",
+        "D1_depolarizing_x1.5",
+        "D2_depolarizing_x2",
+        "D3_bad_qubit",
+        "D4_thermal_relaxation",
+        "D5_readout",
+        "D6_combined"
+      ]
+    },
+    "train_circuits": 300,
+    "calibration_circuits": 100,
+    "test_circuits": 100,
+    "recalibration_counts": [
+      10,
+      25,
+      50,
+      100,
+      200
+    ],
+    "repeats": 20,
+    "alpha": 0.1,
+    "bootstrap_resamples": 200,
+    "random_seed": 2026,
+    "retrain_counts": [
+      50,
+      100,
+      200
+    ],
+    "retrain_calibration_circuits": 100
+  }
+}

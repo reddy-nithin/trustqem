@@ -54,3 +54,54 @@ signal and pull the quantile down. Calibrating on nonzero-ideal Clifford rows on
 coverage). The Clifford set is a covariate-shifted calibration set. Proposed fix for Stage 2: weighted conformal
 prediction under covariate shift (Tibshirani et al., 2019), reweighting Clifford rows so their distribution of
 observed features (noisy values, depth) matches the target circuits'. Those features are available on hardware.
+
+## 2026-10-25 · Weighted recalibration (Amendment 1) and the confirmation run (profile `full`)
+
+R1W was developed on the pilot pools and frozen in Amendment 1 (commit `90bb355`) before this run. Fresh pools,
+seed 2026: 500 Monday circuits, 400 Tuesday circuits per scenario, all seven scenarios, twins with k = 0, 2, 4, 8,
+20 repeats. About 15 minutes on an M2. Results: `results/drift/full/`.
+
+**H1 holds.** Monday conformal 0.894 ± 0.013 (MAE 0.033). ZNE + bootstrap 0.833.
+
+**H2 holds in 6 of 6 drift scenarios.** Frozen coverage: depolarizing ×1.5 0.776, ×2 0.663, bad qubit 0.574,
+thermal 0.674, readout 0.788, combined 0.446. ZNE + bootstrap also fails everywhere (0.51 to 0.76).
+
+**H3 holds for R1W in all 7 scenarios.** At K = 100 with k = 4 or 8, coverage is 0.881 to 0.915 and width is 1.0 to
+1.1× oracle:
+
+| scenario | frozen | R1 k=4 | R2 k=4 | **R1W k=4** | **R1W k=8** | oracle |
+|---|---|---|---|---|---|---|
+| no drift | 0.887 | 0.866 | 0.904 | 0.904 / 0.15 | 0.898 / 0.15 | 0.897 / 0.15 |
+| depol. ×1.5 | 0.776 | 0.825 | 0.851 | 0.890 / 0.22 | 0.902 / 0.23 | 0.894 / 0.22 |
+| depol. ×2 | 0.663 | 0.829 | 0.859 | 0.893 / 0.31 | 0.895 / 0.31 | 0.889 / 0.30 |
+| bad qubit | 0.574 | 0.833 | 0.860 | 0.905 / 0.44 | 0.915 / 0.46 | 0.902 / 0.43 |
+| thermal | 0.674 | 0.839 | 0.865 | 0.881 / 0.27 | 0.888 / 0.28 | 0.884 / 0.27 |
+| readout | 0.788 | 0.892 | 0.922 | 0.913 / 0.21 | 0.912 / 0.21 | 0.894 / 0.19 |
+| combined | 0.446 | 0.830 | 0.866 | 0.903 / 0.56 | 0.909 / 0.57 | 0.893 / 0.54 |
+
+(R1W and oracle cells: coverage / mean width. 95% CIs on coverage are ±0.007 to ±0.015.)
+
+- Unweighted R1 and R2 confirm the pilot: they recover most of the loss but sit 3 to 7 points low.
+- **k matters.** With pure Clifford twins (k = 0), R1W over-covers (0.90 to 0.98) with widths up to 2.35× oracle,
+  because no pure Clifford row resembles a mid-valued random row. k = 2 is in between and noisier. k = 4 to 8 works.
+  These twins stay classically simulable: stabilizer-rank simulation costs grow with k, not with qubit count.
+- **Budget.** With k = 8, K = 25 already restores coverage in every scenario (0.894 to 0.915), at widths up to 1.3×
+  oracle. Widths reach the oracle's by K = 50 to 100. At K = 10 coverage is fine but widths are 1.5 to 2.4× oracle.
+
+**R4 (retrain) comparison.** Retraining on N = 50 to 200 labeled drifted circuits, plus 100 more for calibration,
+also gives 0.88 to 0.90 coverage, with widths 10 to 25% narrower than R1W, because the retrained model is more
+accurate (combined scenario MAE 0.117 → 0.088). The honest trade-off is that R4 needs 150 to 300 circuits with known
+ideal values. For non-Clifford circuits at scale, no classical computer can supply those. R1W needs 25 to 100
+near-Clifford circuits, which it can.
+
+**H4 is partial.** False-alarm rate on no drift ≤ 0.05 at every K and k except k = 8 at K = 25 (0.10). At K = 100,
+power ≥ 0.80 for at least one k in all six drift scenarios, and for every k in four of them. The mildest drifts are
+the hardest to detect: depolarizing ×1.5 reaches 0.85 only with k = 8 (0.15 to 0.50 otherwise) and needs K = 200 for
+0.9 to 1.0 at k ≥ 2. Pure Clifford twins detect worst.
+
+**Caveats.**
+- All 20 repeats share one simulated pool per scenario, so the CIs reflect resampling variation and understate
+  pool-to-pool variation.
+- The oracle itself averages 0.884 on thermal relaxation, slightly under 0.90. Row-level calibration on correlated
+  rows is the likely cause; per-circuit (max-score) calibration would test that.
+- Simulation only, 4 qubits. Stage 3 adds device-realistic noise and gate folding.
