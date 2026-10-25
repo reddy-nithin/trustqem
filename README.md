@@ -11,9 +11,11 @@ with no error bar. When the hardware's noise drifts, as it does from day to day,
 This project:
 
 1. puts conformal prediction intervals (error bars with a coverage guarantee) on learned error mitigation,
-2. measures how those intervals fail when the device noise drifts after training, and
+2. measures how those intervals fail when the device noise drifts after training,
 3. restores them by recalibrating on Clifford circuits, whose ideal outputs a classical computer can calculate at
-   any size, without retraining the model.
+   any size, without retraining the model, and
+4. checks all of this on a model of a real IBM Heron device (FakeFez), with noise amplified by gate folding the way
+   it has to be done on hardware.
 
 Hypotheses were written down before any experiment ran: see [docs/HYPOTHESES.md](docs/HYPOTHESES.md).
 Progress and findings: [docs/RESEARCH_LOG.md](docs/RESEARCH_LOG.md).
@@ -23,13 +25,16 @@ Progress and findings: [docs/RESEARCH_LOG.md](docs/RESEARCH_LOG.md).
 ```bash
 uv sync
 uv run pytest -q
+uv run trustqem run drift --profile pilot     # toy noise model, drift by scaling error rates
+uv run trustqem run device --profile pilot    # FakeFez noise, gate folding, calibration drift
 uv run jupyter lab notebooks/
 ```
 
 ## Layout
 
 ```
-src/trustqem/     circuits, noise models, simulation, mitigation methods, plotting
+src/trustqem/     circuits, noise models, device model and gate folding, simulation, mitigation, plotting
+src/trustqem/experiments/   drift (Stages 1 and 2) and device (Stage 3) experiments
 notebooks/        00_reproduce_baseline: the starting point, reproduced exactly
 tests/            unit tests (fast by default; `pytest -m slow` runs simulations)
 docs/             hypotheses and the research log
