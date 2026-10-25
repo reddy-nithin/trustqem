@@ -60,32 +60,43 @@ def simulate_pool(
     `prepare(circuit, scale)` turns the logical circuit into what actually runs at that scale (e.g. transpiled and
     gate-folded). Ideal values always come from the logical circuit.
     """
-    observable_weights = [sum(1 for character in label if character != "I") for label in observable_labels]
-    probabilities, row_index, row_features, row_noisy, row_ideal = [], [], [], [], []
     start_time = time.time()
+    probabilities = np.array([[
+        sampled_probabilities(record.circuit if prepare is None else prepare(record.circuit, scale),
+                              simulators[scale], config.shots_per_circuit, random_generator)
+        for scale in config.noise_scale_factors] for record in records])     # (circuits, scales, 2**n)
+    logger.info("pool %s: %d circuits in %.0fs", condition_name, len(records), time.time() - start_time)
+    return pool_from_probabilities(records, condition_name, probabilities, config.shots_per_circuit, observables,
+                                   observable_labels, sign_table)
 
+
+def pool_from_probabilities(
+    records: list[CircuitRecord],
+    condition_name: str,
+    probabilities: np.ndarray,
+    shots: int,
+    observables: list[SparsePauliOp],
+    observable_labels: list[str],
+    sign_table: np.ndarray,
+) -> SimulatedPool:
+    """Turn measured fractions (circuits, scales, 2**n), from a simulator or real hardware, into a pool's rows."""
+    observable_weights = [sum(1 for character in label if character != "I") for label in observable_labels]
+    row_index, row_features, row_noisy, row_ideal = [], [], [], []
     for circuit_index, record in enumerate(records):
         ideal_values = ideal_expectation_values(record.circuit, observables)
-        per_scale = np.array([
-            sampled_probabilities(record.circuit if prepare is None else prepare(record.circuit, scale),
-                                  simulators[scale], config.shots_per_circuit, random_generator)
-            for scale in config.noise_scale_factors])                          # (scales, 2**n)
-        noisy_values = per_scale @ sign_table.T                                 # (scales, observables)
-        probabilities.append(per_scale)
+        noisy_values = probabilities[circuit_index] @ sign_table.T              # (scales, observables)
         for observable_index, weight in enumerate(observable_weights):
             row_index.append(circuit_index)
             row_features.append([record.layer_count, record.one_qubit_gate_count, record.cx_count, weight])
             row_noisy.append(noisy_values[:, observable_index])
             row_ideal.append(ideal_values[observable_index])
-
-    logger.info("pool %s: %d circuits in %.0fs", condition_name, len(records), time.time() - start_time)
     return SimulatedPool(
         condition_name=condition_name,
         records=records,
-        probabilities=np.array(probabilities),
+        probabilities=np.asarray(probabilities, dtype=float),
         row_circuit_index=np.array(row_index),
         row_features=np.array(row_features, dtype=float),
         row_noisy_values=np.array(row_noisy),
         row_ideal_values=np.array(row_ideal),
-        shots=config.shots_per_circuit,
+        shots=shots,
     )
