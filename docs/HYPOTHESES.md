@@ -124,3 +124,47 @@ and the pilot is reported alongside; otherwise the pilot is the verdict.
 
 **Disclosure.** Before this amendment a smoke run (60 Monday circuits, scenarios E0 and E5, 2 repeats) checked that
 the code runs. Its numbers were seen. Nothing above was changed because of them.
+
+### Amendment 3 (2026-10-25, Stage 4, before any hardware job)
+
+**Question.** Do the error bars restored by R1W hold on a real IBM device, when the model was trained only on
+simulated data?
+
+**Setup.**
+- Device: an IBM Heron device available on the Open Plan (`ibm_fez` by default; the device used is recorded in each
+  session's `manifest.json`). The 4-qubit line is chosen on session 1's day as the connected line with the lowest
+  summed cz error plus readout error (`device.choose_chain`), and kept for session 2.
+- Monday: simulated with the Stage 3 device model (per-qubit gate, relaxation, idle and readout noise) from the
+  device's calibration recorded at session 1's `prepare`. 300 training and 100 calibration random circuits, 200
+  twins with k = 8. The learned model, its conformal quantile and the Monday twin scores come only from this
+  simulation.
+- Tuesdays: two hardware sessions, S1 and S2, at least 3 days apart, on the same qubits and the same circuits: 60
+  test, 60 oracle and 60 twin circuits (k = 8), fold scales 1, 3, 5, 1000 shots, SamplerV2 with dynamical decoupling
+  and twirling off, optimization level 0. Seed 4004. The shift the method must repair is the simulator-to-hardware
+  gap (both sessions) plus day-to-day drift (S2).
+- Methods: R0 frozen, ZNE (linear, scales 1, 3, 5) with shot bootstrap, R1, R2, R1W, and R3 oracle, at K = 25 and
+  K = 60. R4 is not run: retraining needs N + 100 labeled hardware circuits and the sessions have 60.
+- Uncertainty: estimates average 200 random draws of the calibration circuits on the full test set; 95% intervals
+  come from 1000 circuit-level bootstrap resamples (test circuits resampled with replacement, and the twin and
+  oracle sets resampled or subsampled).
+
+**Hypotheses and rules.**
+- H2-hw: frozen intervals cover less than 0.87 on hardware in at least one session.
+- H3-hw (primary), judged per session: R1W at K = 60 reaches coverage within 3 points of 0.90, with mean width under
+  2x the oracle's at K = 60. Also reported for each session: whether the 95% interval of R1W's coverage contains
+  0.90, and the same numbers at K = 25. With 60 test circuits (420 rows) the 95% interval is about ±4 points wide, so
+  a pass is evidence, not proof, and a fail by less than that margin is reported as inconclusive rather than as a
+  clear failure.
+- R1W is exactly as frozen in Amendment 1 (shift features, degree-2 logistic regression, weights clipped to
+  [0.05, 20]); only k = 8 twins are run, the setting that held in every Stage 3 scenario.
+- Reported, not judged: the fold-scaling diagnostic (measured attenuation at each fold scale against the
+  simulator's prediction for the same calibration, and the linearity ratio ln(a5/a1) / ln(a3/a1), which is 2.0 when
+  each fold adds the same noise), the drift alarm, and the QPU time IBM charges against our estimate.
+
+**Data rules.** No circuit or session is excluded. A failed or cancelled job is re-run once with the same circuits
+and noted in the log. The qubits stay fixed for S2 even if their calibration got worse; that change is part of what
+is tested. If only S1 completes before the poster deadline, S1 alone is reported and labelled as one session.
+
+**Disclosure.** Before this amendment the full pipeline was rehearsed on FakeFez in local mode (results in the
+git-ignored `results/hardware/dryrun/`) to check that every step runs. Its numbers are simulated, not hardware
+data; nothing above is changed because of them.
