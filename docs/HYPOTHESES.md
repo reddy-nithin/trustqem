@@ -65,3 +65,62 @@ circuits, so K can exceed the test-set size.
 labeled drifted random circuits, N in {50, 100, 200}, then calibrate on 100 more labeled drifted circuits. This
 measures what our method saves: R4 needs N + 100 circuits with known ideal values, which a classical computer cannot
 supply for large non-Clifford circuits.
+
+### Amendment 2 (2026-10-25, Stage 3, before the device pilot)
+
+**Question.** Do H2 and H3 still hold, with R1W exactly as frozen in Amendment 1, when (a) the noise is a per-qubit
+model of a real IBM Heron device and (b) noise is amplified by gate folding, which is what hardware allows, instead
+of by scaling error rates inside the simulator?
+
+**Device (Monday).** The FakeFez snapshot in qiskit-ibm-runtime 0.51.0 (Heron r2, 156 qubits, calibration dated
+2025-02-26). We use the connected line of 4 physical qubits with the lowest summed cz error plus readout error:
+physical qubits 136, 143, 142, 141. Their calibration: T1 96, 150, 166, 168 µs; T2 94, 123, 145, 91 µs; sx error
+2.1e-4, 1.0e-4, 3.1e-4, 1.4e-4; cz error 2.4e-3, 3.3e-3, 2.9e-3 on the three edges; readout P(1|0) 0 to 0.003 and
+P(0|1) 0.007 to 0.011; sx 24 ns, cz 84 ns. Noise model: each gate gets T1/T2 relaxation over its duration plus
+depolarizing noise sized so the total matches the calibrated gate error (the recipe of Aer's
+NoiseModel.from_backend; a test checks every gate channel matches it exactly); readout keeps IBM's asymmetric flip
+probabilities; idle qubits decay through ALAP scheduling and Aer's RelaxationNoisePass. rz is virtual and noiseless.
+
+**Circuits and folding.** Same random-circuit recipe and twins as before (4 qubits, 1 to 12 layers). Circuits and
+twins are transpiled to the native gates (cz, rz, sx, x) on the line with optimization level 0, so twin and target
+keep the same layout and gates are not merged. Noise is amplified by local unitary folding, G to G (G† G)^n, at
+scales 1, 3, 5. The learned model's inputs are the noisy values at fold scales 1, 3, 5 plus the same four circuit
+features. Shots stay at 1000 per circuit per scale.
+
+**Tuesday scenarios (frozen here).** Applied to Monday's calibration of the four chain qubits:
+
+| scenario | change | basis |
+|---|---|---|
+| E0 no drift | none (control) | |
+| E1 coherence drop | T1 and T2 x0.5 on all four qubits | T1 of one transmon varies by more than 2x over days (Burnett et al., npj Quantum Inf. 2019, doi 10.1038/s41534-019-0168-5); all four at once is a pessimistic day |
+| E2 bad qubit | chain qubit 1 (physical 143): T1 x0.2; cz error on its two edges x3 | a defect coming into resonance can change T1 by up to 10x within 15 minutes (Klimov et al., PRL 121, 090502, 2018; on IBM qubits, Carroll et al., npj Quantum Inf. 2022, doi 10.1038/s41534-022-00643-y); gate errors of single ibm_kyiv qubits fluctuated by up to 300% over 12 days (arXiv 2505.06165) |
+| E3 readout | readout flip probabilities x2 | assumption: no published day-to-day readout figure was found; on FakeFez the 90th-percentile readout error is 3.5x the median, so x2 is inside the spread of one chip |
+| E4 gate errors | sx, x, cz errors x1.5 | stale calibration; inside the 300% range above; on FakeFez the 90th-percentile sx and cz errors are 2.0x and 3.7x the median |
+| E5 combined | T1/T2 x0.7, gate errors x1.3, readout x1.5, plus chain qubit 1 at T1 x0.5 and cz x1.5 | milder versions of all of the above on one day |
+
+**Hypotheses and pass rules (unchanged in substance).**
+- H1 check: Monday conformal coverage within 0.90 ± 0.02.
+- H2: frozen Monday intervals lose 10 or more points of coverage in at least 2 of the 5 drift scenarios (E1 to E5).
+- H3, judged per scenario including E0: R1W with near-Clifford twins (k ≥ 2) at some K ≤ 100 reaches coverage
+  within 3 points of 0.90 with mean width under 2x the oracle at the same K. This is the rule Amendment 1's verdict
+  code applies. The fixed cell k = 4, K = 100 is reported next to it for every scenario, so the reader can see the
+  result without the choice of k and K.
+- H4 (drift alarm) is reported as secondary and not judged.
+
+**R1W is unchanged.** Same shift features (|noisy value| at each scale, decay from the lowest to the highest scale,
+circuit features), degree-2 polynomial logistic regression, weights clipped to [0.05, 20]. The only difference is
+that the scale columns now hold fold scales 1, 3, 5 instead of rate scales 1, 2, 3, because that is what the
+hardware gives. Nothing about R1W will be tuned on Stage 3 results; any change would need a new amendment and fresh
+pools with another seed.
+
+**Methods reported.** R0 frozen, ZNE (linear, scales 1, 3, 5) with bootstrap intervals, R1, R2, R1W (k = 0, 2, 4, 8),
+R3 oracle, and R4 retrain.
+
+**Runs.** Pilot: seed 3003, 500 Monday circuits, 300 Tuesday circuits per scenario, K in {25, 50, 100}, 5 repeats,
+R4 with N in {50, 100}. Full: seed 3030, 400 Tuesday circuits per scenario, K in {10, 25, 50, 100, 200}, 20
+repeats, R4 with N in {50, 100, 200}. The full run goes ahead if the pilot finishes without errors and the full run
+is projected to take under 3 hours, whatever the pilot's verdict. If it runs, the full run is the Stage 3 verdict
+and the pilot is reported alongside; otherwise the pilot is the verdict.
+
+**Disclosure.** Before this amendment a smoke run (60 Monday circuits, scenarios E0 and E5, 2 repeats) checked that
+the code runs. Its numbers were seen. Nothing above was changed because of them.
