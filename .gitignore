@@ -4,7 +4,8 @@ __pycache__/
 .ipynb_checkpoints/
 .env
 .pytest_cache/
-results/*.pkl
+results/**/*.pkl
+results/**/smoke/
 .DS_Store
 # agent files stay local
 CLAUDE.md

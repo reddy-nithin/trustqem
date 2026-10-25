@@ -2509,6 +2509,7 @@ dependencies = [
     { name = "qiskit" },
     { name = "qiskit-aer" },
     { name = "scikit-learn" },
+    { name = "scipy" },
 ]
 
 [package.dev-dependencies]
@@ -2527,6 +2528,7 @@ requires-dist = [
     { name = "qiskit", specifier = ">=2.0" },
     { name = "qiskit-aer", specifier = ">=0.17" },
     { name = "scikit-learn", specifier = ">=1.5" },
+    { name = "scipy", specifier = ">=1.18.1" },
 ]
 
 [package.metadata.requires-dev]

@@ -13,6 +13,7 @@ dependencies = [
     "qiskit>=2.0",
     "qiskit-aer>=0.17",
     "scikit-learn>=1.5",
+    "scipy>=1.18.1",
 ]
 
 [build-system]
@@ -39,3 +40,6 @@ select = ["E", "F", "I", "B", "UP"]
 testpaths = ["tests"]
 markers = ["slow: runs a simulation that takes more than a few seconds"]
 addopts = "-m 'not slow'"
+
+[project.scripts]
+trustqem = "trustqem.cli:main"
