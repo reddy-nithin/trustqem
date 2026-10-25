@@ -106,3 +106,106 @@ the hardest to detect: depolarizing ×1.5 reaches 0.85 only with k = 8 (0.15 to 
 - The oracle itself averages 0.884 on thermal relaxation, slightly under 0.90. Row-level calibration on correlated
   rows is the likely cause; per-circuit (max-score) calibration would test that.
 - Simulation only, 4 qubits. Stage 3 adds device-realistic noise and gate folding.
+
+## 2026-10-25 · Stage 3: device-realistic noise and gate folding (Amendment 2)
+
+**What changed.** Monday is now the FakeFez calibration (IBM Heron r2 snapshot dated 2025-02-26, from
+qiskit-ibm-runtime 0.51.0) on the best 4-qubit line, physical qubits 136, 143, 142, 141. Each qubit has its own T1,
+T2, gate errors and asymmetric readout errors, and idle qubits decay while they wait. Circuits and twins are
+transpiled to the native gates (cz, rz, sx, x) and noise is amplified by folding every gate (G to G G† G) to scales
+1, 3, 5, instead of scaling error rates. Tuesday scenarios perturb Monday's calibration: E1 T1/T2 x0.5, E2 one bad
+qubit (T1 x0.2, its cz errors x3), E3 readout x2, E4 gate errors x1.5, E5 a milder mix, E0 no drift. Magnitudes,
+sources and pass rules were frozen in Amendment 2 (commit `33c061c`) before the pilot ran. R1W was not changed.
+
+Checks before running: every gate error channel of our 4-qubit model equals the one Aer's `NoiseModel.from_backend`
+builds for the same physical qubits (a slow test); folding multiplies the sx, x and cz counts by exactly the scale
+and leaves the unitary unchanged; pure Clifford twins stay Clifford after transpiling, and a twin with k kept
+rotations has at most k non-Clifford rz gates; the drift smoke run gives byte-identical results before and after
+the shared-code changes; notebook 00 still reproduces Luke's seven numbers.
+
+**Runs.** Pilot: seed 3003, 5 repeats, 65 minutes. Full: seed 3030, 500 Monday circuits, 400 Tuesday circuits per
+scenario, twins with k = 0, 2, 4, 8, K in {10, 25, 50, 100, 200}, 20 repeats, 86 minutes (4-core container).
+Results: `results/device/pilot/` and `results/device/full/`. The full run is the Stage 3 verdict.
+
+**H1 holds.** Monday conformal coverage 0.889 ± 0.010 (MAE 0.020). ZNE + bootstrap covers 0.855 ± 0.005, so the
+second half of the original H1 (under 0.85) narrowly fails on this noise: with Heron-level noise, linear ZNE is less
+biased than on the toy model.
+
+**H2 holds, but only just: 2 of 5 drift scenarios lose 10 or more points.** Frozen coverage: E2 bad qubit 0.714 and
+E5 combined 0.775 (18.6 and 12.5 points under 0.90). The other three lose 3.4 to 5.3 points against 0.90 (E1 0.866,
+E3 0.864, E4 0.847), or 2.0 to 3.9 points against the no-drift control's 0.886.
+Realistic day-to-day drift on a good chain of a Heron device is milder than the toy scenarios of Stage 2, except
+when one qubit goes bad.
+
+**H3 holds for R1W in all 6 scenarios.** By the pre-registered rule, R1W restores every scenario already at K = 25
+(coverage 0.880 to 0.903, width 1.09 to 1.39x oracle). At the fixed cell K = 100:
+
+| scenario | frozen | ZNE+boot | R1 k=4 | R2 k=4 | **R1W k=4** | **R1W k=8** | oracle | R4 N=100 |
+|---|---|---|---|---|---|---|---|---|
+| E0 no drift | 0.886 | 0.860 | 0.863 | 0.885 | 0.884 / 0.082 | 0.901 / 0.087 | 0.892 / 0.084 | 0.896 / 0.083 |
+| E1 coherence x0.5 | 0.866 | 0.852 | 0.874 | 0.896 | 0.907 / 0.093 | 0.914 / 0.095 | 0.895 / 0.089 | 0.894 / 0.087 |
+| E2 bad qubit | 0.714 | 0.838 | 0.813 | 0.836 | 0.907 / 0.141 | 0.899 / 0.137 | 0.896 / 0.135 | 0.901 / 0.117 |
+| E3 readout x2 | 0.864 | 0.811 | 0.892 | 0.913 | 0.917 / 0.098 | 0.904 / 0.093 | 0.902 / 0.092 | 0.894 / 0.088 |
+| E4 gate errors x1.5 | 0.847 | 0.868 | 0.863 | 0.883 | 0.902 / 0.098 | 0.903 / 0.098 | 0.895 / 0.096 | 0.893 / 0.090 |
+| E5 combined | 0.775 | 0.834 | 0.845 | 0.872 | 0.909 / 0.120 | 0.909 / 0.121 | 0.899 / 0.116 | 0.896 / 0.104 |
+
+(Coverage, or coverage / mean width. 95% CIs on coverage are ±0.005 to ±0.017. Frozen width is 0.082 in
+every scenario.)
+
+- R1W with k = 4 or 8 at K = 100: coverage 0.884 to 0.917, width 0.98 to 1.07x oracle, in every scenario.
+- **Unweighted recalibration is enough for mild drift but not for a bad qubit.** R2 (k = 4, K = 100) is within 3
+  points in E0, E1, E3, E4 and E5 (0.872), but covers only 0.836 in E2. R1 sits 1 to 9 points low. The verdict line
+  for R1/R2 passes everywhere only because the rule may pick the best k and K; at fixed cells R1W is the method that
+  holds across scenarios.
+- **Pure Clifford twins (k = 0) fail in both directions.** At K ≤ 50 the weighted quantile is often infinite (no twin
+  looks like the target), so intervals span the whole [-1, 1] range: coverage 0.96 to 0.99 at widths 9 to 18x
+  oracle. At K = 200 in E2 the same method under-covers (0.847). Near-Clifford twins are needed, as in Stage 2.
+- **Budget.** At K = 10, R1W with k ≥ 2 covers 0.895 to 0.941 but at widths 3 to 11x oracle (fails the width rule).
+  K = 25 is the smallest passing K; with k = 4 or 8, widths are 0.93 to 1.09x oracle by K = 50.
+- **R4 (retrain)** covers 0.890 to 0.902 everywhere. Its intervals are 5 to 15% narrower than R1W k = 8 at
+  N = 100 (20% in E2 at N = 200), using 150 to 300 labeled drifted circuits against R1W's 25 to 100 twins.
+- **ZNE + bootstrap** is steadier under drift than the frozen conformal intervals (0.811 to 0.868), because its
+  bootstrap width (0.111) is set by shot noise, but it never reaches 0.90 and its MAE is 0.028 to 0.032 against the
+  learned model's 0.020 to 0.032.
+
+**Pilot agrees on coverage.** Pilot frozen: E2 0.721, E5 0.760, others 0.832 to 0.890 (H2: 2 of 5). R1W at K = 100:
+k = 4 0.874 to 0.915, k = 8 0.893 to 0.915. The pilot's k = 4 cells in E1 (0.874) and E5 (0.879) are 2.6 and 2.1 points
+low; the full run's are not.
+
+**H4 (secondary) is weak on realistic drift.** At K = 100 the false-alarm rate is 0.00 at every k. Power: E2 0.55 to
+1.00, E5 0.50 to 0.95, E3 0.15 to 0.60, E4 0.00 to 0.30, E1 0.00 to 0.20. The pilot showed much higher power on the
+same scenarios (E1 0.40 to 1.00, E3 0.60 to 1.00), which says the alarm rate depends heavily on the particular
+simulated pools: repeats reuse one pool, and the Monday and Tuesday twins come from different circuits.
+
+**Hardware budget (for Stage 4).** IBM's documented estimate is about 2 s per sub-job plus (rep_delay + circuit
+time) per shot. FakeFez's default rep_delay is 250 µs, while the folded circuits last 1.2 µs (scale 1) to 5.9 µs
+(scale 5) on average, so the shot count, not the folding, sets the cost.
+
+| run | circuits | executions (x3 scales) | shots | estimated QPU time |
+|---|---|---|---|---|
+| one Tuesday: 40 test + 40 twins (one k) | 80 | 240 | 240,000 | 63 s |
+| Monday training set on hardware (300 train + 100 calibration) | 400 | 1,200 | 1,200,000 | 308 s |
+
+One Tuesday fits the Open Plan's 240 s per day. A hardware-trained Monday does not fit in one day and would take half
+of the 600 s monthly allowance. Training on a simulator with the device's calibration, or halving shots, are the
+obvious options to weigh.
+
+**Caveats.**
+- One fake snapshot, one (best) chain, 4 qubits. The noise is Markovian per gate: no crosstalk, leakage, coherent
+  over-rotations or drift within a run. Coherent errors matter for folding on hardware, because G† G can partly
+  cancel them, so real folded noise may grow less than 3x and 5x.
+- Readout error is not amplified by folding; both ZNE and the learned model see it as a fixed bias.
+- The E3 readout multiplier is an assumption (no published day-to-day readout figure was found). The other
+  magnitudes rest on Klimov et al. 2018, Burnett et al. 2019, Carroll et al. 2022 and arXiv 2505.06165. arXiv was
+  not reachable from the build container, so these figures were taken from abstracts and search summaries and
+  should be checked against the full papers before the poster.
+- All repeats share one simulated pool per scenario, so CIs understate pool-to-pool variation (the H4 gap between
+  pilot and full is an example).
+- The H3 rule lets the best k and smallest K be chosen after the fact; the fixed cells (k = 4 and 8 at K = 100) are
+  the fairer summary and agree.
+
+**Pain points.** The verdict code recognised only `D0_no_drift` as the control, so the first pilot verdict counted
+E0 as a drift scenario ("2 of 6"). Fixed to treat any `*_no_drift` as the control; the drift verdicts regenerate
+unchanged. Adding qiskit-ibm-runtime moved python-dateutil from 3.0.0 to 2.9.0.post0 in the lockfile (the qiskit,
+qiskit-aer and scikit-learn pins did not move). The full run was restarted once because a background job limit of
+2 hours was too close to its 86-minute runtime.
