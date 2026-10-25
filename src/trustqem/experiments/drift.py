@@ -6,7 +6,7 @@ fresh random draws of the Tuesday test set and of the K recalibration circuits.
 
 import json
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 import numpy as np
@@ -20,14 +20,22 @@ from trustqem.conformal import (
     evaluate_symmetric_intervals,
 )
 from trustqem.experiments.pools import ExperimentPools, PoolSizes, load_or_build_pools
-from trustqem.experiments.report import plot_coverage_by_scenario, summarize, write_verdict
+from trustqem.experiments.report import (
+    plot_coverage_by_scenario,
+    plot_recalibration_budget,
+    summarize,
+    write_verdict,
+)
 from trustqem.mitigation import learned_predictions, train_learned_mitigator
+from trustqem.noise import DRIFT_SCENARIOS
 from trustqem.pool import SimulatedPool
 from trustqem.recalibrate import (
     clifford_direct_quantile,
     clifford_ratio_quantile,
+    clifford_weighted_quantiles,
     drift_alarm_p_value,
     per_circuit_mean,
+    shift_features,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,6 +53,9 @@ class DriftProfile:
     repeats: int
     alpha: float = 0.1
     bootstrap_resamples: int = 200
+    random_seed: int = 42
+    retrain_counts: tuple[int, ...] = ()        # N labeled drifted circuits for R4; empty skips R4
+    retrain_calibration_circuits: int = 100
 
 
 PROFILES = {
@@ -59,6 +70,12 @@ PROFILES = {
                         scenarios=("D0_no_drift", "D2_depolarizing_x2", "D4_thermal_relaxation", "D6_combined")),
         train_circuits=300, calibration_circuits=100, test_circuits=100, recalibration_counts=(25, 50, 100),
         repeats=5),
+    # confirmation run for Amendment 1 (docs/HYPOTHESES.md): fresh seed, every scenario, 20 repeats
+    "full": DriftProfile(
+        sizes=PoolSizes(monday_circuits=500, monday_twin_sources=200, tuesday_circuits=400,
+                        twin_non_clifford_counts=(0, 2, 4, 8), scenarios=tuple(DRIFT_SCENARIOS)),
+        train_circuits=300, calibration_circuits=100, test_circuits=100,
+        recalibration_counts=(10, 25, 50, 100, 200), repeats=20, random_seed=2026, retrain_counts=(50, 100, 200)),
 }
 
 
@@ -102,20 +119,34 @@ def run_repeat(pools: ExperimentPools, profile: DriftProfile, repeat: int,
 
     monday = pools.monday
     train_rows = monday.rows_of(train_ids)
-    model = train_learned_mitigator(monday.model_inputs()[train_rows], monday.row_ideal_values[train_rows], config)
+    training = (monday.model_inputs()[train_rows], monday.row_ideal_values[train_rows])
+    model = train_learned_mitigator(*training, config)
     monday_predictions, monday_scores = _scores(model, monday)
     monday_quantile = conformal_quantile(monday_scores[monday.rows_of(calibration_ids)], profile.alpha)
 
     rows = _evaluate_test_set(repeat, "monday", monday, monday_predictions, monday_scores, test_ids,
                               monday_quantile, bootstrap["monday"])
-    monday_twin_scores = {keep: _scores(model, pool)[1] for keep, pool in pools.monday_twins.items()}
+    context = _RepeatContext(pools, profile, repeat, model, monday_quantile, training,
+                             {keep: _scores(model, pool)[1] for keep, pool in pools.monday_twins.items()})
     alarms = []
     for scenario in pools.tuesday:
-        scenario_rows, scenario_alarms = _evaluate_scenario(
-            pools, profile, repeat, scenario, model, monday_quantile, monday_twin_scores, bootstrap[scenario], rng)
+        scenario_rows, scenario_alarms = _evaluate_scenario(context, scenario, bootstrap[scenario], rng)
         rows.extend(scenario_rows)
         alarms.extend(scenario_alarms)
     return rows, alarms
+
+
+@dataclass(frozen=True)
+class _RepeatContext:
+    """What every scenario in one repeat shares: the frozen Monday model and its calibration."""
+
+    pools: ExperimentPools
+    profile: DriftProfile
+    repeat: int
+    model: object
+    monday_quantile: float
+    training: tuple[np.ndarray, np.ndarray]         # Monday training inputs and ideal values, reused by R4
+    monday_twin_scores: dict[int, np.ndarray]
 
 
 def _evaluate_test_set(repeat: int, scenario: str, pool: SimulatedPool, predictions: np.ndarray,
@@ -134,51 +165,75 @@ def _evaluate_test_set(repeat: int, scenario: str, pool: SimulatedPool, predicti
             ResultRow(repeat, scenario, "zne_bootstrap", 0, -1, zne.coverage, zne.mean_width, zne_mae)]
 
 
-def _evaluate_scenario(pools: ExperimentPools, profile: DriftProfile, repeat: int, scenario: str, model,
-                       monday_quantile: float, monday_twin_scores: dict[int, np.ndarray], bootstrap: tuple,
+def _evaluate_scenario(context: _RepeatContext, scenario: str, bootstrap: tuple,
                        rng: np.random.Generator) -> tuple[list[ResultRow], list[dict]]:
     """All recalibration methods, K values and twin types for one drift scenario."""
+    pools, profile, repeat = context.pools, context.profile, context.repeat
     tuesday = pools.tuesday[scenario]
-    predictions, scores = _scores(model, tuesday)
+    predictions, scores = _scores(context.model, tuesday)
     order = rng.permutation(tuesday.circuit_count)
     test_ids, oracle_source = order[:profile.test_circuits], order[profile.test_circuits:]
-    rows = _evaluate_test_set(repeat, scenario, tuesday, predictions, scores, test_ids, monday_quantile, bootstrap)
+    rows = _evaluate_test_set(repeat, scenario, tuesday, predictions, scores, test_ids, context.monday_quantile,
+                              bootstrap)
     test_rows = tuesday.rows_of(test_ids)
     truths, test_predictions = tuesday.row_ideal_values[test_rows], predictions[test_rows]
+    test_shift = shift_features(tuesday.row_noisy_values[test_rows], tuesday.row_features[test_rows])
     mae = float(scores[test_rows].mean())
+    twin_scores = {keep: _scores(context.model, pools.tuesday_twins[(scenario, keep)])[1]
+                   for keep in pools.sizes.twin_non_clifford_counts}
     alarms = []
 
-    def add(method: str, count: int, keep: int, quantile: float) -> None:
+    def add(method: str, count: int, keep: int, quantile: float | np.ndarray) -> None:
         report = evaluate_symmetric_intervals(test_predictions, truths, quantile)
         rows.append(ResultRow(repeat, scenario, method, count, keep, report.coverage, report.mean_width, mae))
 
     for count in profile.recalibration_counts:
-        oracle_ids = rng.choice(oracle_source, size=count, replace=False)
-        add("R3_oracle", count, -1, conformal_quantile(scores[tuesday.rows_of(oracle_ids)], profile.alpha))
+        if count <= oracle_source.size:
+            oracle_ids = rng.choice(oracle_source, size=count, replace=False)
+            add("R3_oracle", count, -1, conformal_quantile(scores[tuesday.rows_of(oracle_ids)], profile.alpha))
         for keep in pools.sizes.twin_non_clifford_counts:
-            twin_pool = pools.tuesday_twins[(scenario, keep)]
-            _, twin_scores = _scores(model, twin_pool)
-            twin_ids = rng.choice(test_ids, size=min(count, test_ids.size), replace=False)   # twins of test circuits
-            twin_rows = twin_pool.rows_of(twin_ids)
-            monday_pool = pools.monday_twins[keep]
-            monday_ids = rng.choice(monday_pool.circuit_count, size=min(count, monday_pool.circuit_count),
-                                    replace=False)
-            monday_rows = monday_pool.rows_of(monday_ids)
-            before, after = monday_twin_scores[keep][monday_rows], twin_scores[twin_rows]
+            twin_pool, monday_pool = pools.tuesday_twins[(scenario, keep)], pools.monday_twins[keep]
+            twin_rows = twin_pool.rows_of(rng.choice(twin_pool.circuit_count, size=count, replace=False))
+            monday_rows = monday_pool.rows_of(rng.choice(monday_pool.circuit_count,
+                                                         size=min(count, monday_pool.circuit_count), replace=False))
+            before, after = context.monday_twin_scores[keep][monday_rows], twin_scores[keep][twin_rows]
+            twin_shift = shift_features(twin_pool.row_noisy_values[twin_rows], twin_pool.row_features[twin_rows])
             add("R1_clifford_direct", count, keep, clifford_direct_quantile(after, profile.alpha))
             add("R2_clifford_ratio", count, keep,
-                clifford_ratio_quantile(monday_quantile, before, after, profile.alpha))
+                clifford_ratio_quantile(context.monday_quantile, before, after, profile.alpha))
+            add("R1W_clifford_weighted", count, keep,
+                clifford_weighted_quantiles(after, twin_shift, test_shift, profile.alpha))
             alarms.append({"repeat": repeat, "scenario": scenario, "recalibration_count": count,
                            "non_clifford_count": keep, "p_value": drift_alarm_p_value(
                                per_circuit_mean(before, monday_pool.row_circuit_index[monday_rows]),
                                per_circuit_mean(after, twin_pool.row_circuit_index[twin_rows]))})
+    rows.extend(_retrain_rows(context, scenario, tuesday, test_ids, oracle_source, rng))
     return rows, alarms
+
+
+def _retrain_rows(context: _RepeatContext, scenario: str, tuesday: SimulatedPool, test_ids: np.ndarray,
+                  oracle_source: np.ndarray, rng: np.random.Generator) -> list[ResultRow]:
+    """R4: retrain on Monday plus N labeled drifted circuits, then calibrate on more labeled drifted circuits."""
+    profile, rows = context.profile, []
+    test_rows = tuesday.rows_of(test_ids)
+    for count in profile.retrain_counts:
+        labeled = rng.choice(oracle_source, size=count + profile.retrain_calibration_circuits, replace=False)
+        fit_rows, calibration_rows = tuesday.rows_of(labeled[:count]), tuesday.rows_of(labeled[count:])
+        model = train_learned_mitigator(
+            np.vstack([context.training[0], tuesday.model_inputs()[fit_rows]]),
+            np.concatenate([context.training[1], tuesday.row_ideal_values[fit_rows]]), context.pools.config)
+        predictions, scores = _scores(model, tuesday)
+        report = evaluate_symmetric_intervals(predictions[test_rows], tuesday.row_ideal_values[test_rows],
+                                              conformal_quantile(scores[calibration_rows], profile.alpha))
+        rows.append(ResultRow(context.repeat, scenario, "R4_retrain", count, -1, report.coverage,
+                              report.mean_width, float(scores[test_rows].mean())))
+    return rows
 
 
 def run(profile_name: str, results_root: Path) -> Path:
     """Run every repeat of the drift experiment and write results, figures and the verdict."""
     profile = PROFILES[profile_name]
-    config = ExperimentConfig()
+    config = replace(ExperimentConfig(), random_seed=profile.random_seed)
     output_dir = results_root / "drift" / profile_name
     pools = load_or_build_pools(config, profile.sizes, output_dir / "pools.pkl")
     bootstrap = _bootstrap_by_pool(pools, profile)
@@ -195,7 +250,9 @@ def run(profile_name: str, results_root: Path) -> Path:
         {"config": config.to_dict(), "profile": asdict(profile)}, indent=2, default=str))
     (output_dir / "rows.json").write_text(json.dumps([asdict(row) for row in all_rows]))
     (output_dir / "summary.json").write_text(json.dumps(summary, indent=2))
-    plot_coverage_by_scenario(summary, profile.alpha, max(profile.recalibration_counts)).savefig(
+    headline_count = 100 if 100 in profile.recalibration_counts else max(profile.recalibration_counts)
+    plot_coverage_by_scenario(summary, profile.alpha, headline_count).savefig(
         output_dir / "coverage_by_scenario.png", dpi=200)
+    plot_recalibration_budget(summary, profile.alpha).savefig(output_dir / "recalibration_budget.png", dpi=200)
     write_verdict(summary, profile.alpha, output_dir / "verdict.md")
     return output_dir

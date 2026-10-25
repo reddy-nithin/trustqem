@@ -12,9 +12,15 @@ from trustqem.conformal import (
     conformal_quantile,
     evaluate_symmetric_intervals,
     per_circuit_max_scores,
+    weighted_conformal_quantiles,
 )
 from trustqem.noise import DRIFT_SCENARIOS, MONDAY
-from trustqem.recalibrate import clifford_ratio_quantile, drift_alarm_p_value
+from trustqem.recalibrate import (
+    clifford_ratio_quantile,
+    clifford_weighted_quantiles,
+    drift_alarm_p_value,
+    fit_shift_weigher,
+)
 from trustqem.simulate import build_observable_labels, build_sign_table, ideal_expectation_values
 
 
@@ -154,3 +160,49 @@ def test_sign_table_for_clifford_state() -> None:
     """Sanity: |00> has Z=+1 on both qubits and ZZ=+1."""
     sign_table = build_sign_table(build_observable_labels(2), 2)
     assert np.allclose(sign_table @ Statevector.from_label("00").probabilities(), [1, 1, 1])
+
+
+def test_weighted_quantile_with_equal_weights_matches_plain_quantile() -> None:
+    """Equal weights are ordinary split conformal."""
+    rng = np.random.default_rng(0)
+    for count in (9, 19, 50, 137):
+        scores = rng.exponential(size=count)
+        weighted = weighted_conformal_quantiles(scores, np.ones(count), np.ones(3), 0.1)
+        assert np.all(weighted == conformal_quantile(scores, 0.1))
+
+
+def test_weighted_quantile_is_infinite_when_test_weight_dominates() -> None:
+    """A test point unlike every calibration point gets an honest infinite interval."""
+    assert weighted_conformal_quantiles(np.arange(10.0), np.ones(10), np.array([100.0]), 0.1)[0] == np.inf
+
+
+def test_weighted_quantile_rejects_negative_weights() -> None:
+    """Weights are likelihood ratios, never negative."""
+    with pytest.raises(ValueError):
+        weighted_conformal_quantiles(np.ones(3), np.array([1.0, -1.0, 1.0]), np.ones(1), 0.1)
+
+
+def test_shift_weigher_upweights_rows_that_look_like_the_target() -> None:
+    """Source rows from the target's region get larger weights than rows from elsewhere."""
+    rng = np.random.default_rng(1)
+    source = rng.normal(0, 1, size=(500, 1))
+    target = rng.normal(1, 1, size=(500, 1))
+    weigh = fit_shift_weigher(source, target)
+    assert weigh(np.array([[1.5]]))[0] > 1 > weigh(np.array([[-1.5]]))[0]
+
+
+def test_weighted_recalibration_restores_coverage_under_covariate_shift() -> None:
+    """Noise grows with |x|; calibration mostly near 0, test spread out. Plain conformal under-covers, weighted does
+    not, averaged over draws."""
+    rng = np.random.default_rng(2)
+    plain, weighted = [], []
+    for _ in range(40):
+        calibration_x = rng.normal(0, 0.5, size=(400, 1))
+        test_x = rng.normal(0, 1.5, size=(300, 1))
+        calibration_scores = np.abs(rng.normal(size=400) * (0.1 + np.abs(calibration_x[:, 0])))
+        test_scores = np.abs(rng.normal(size=300) * (0.1 + np.abs(test_x[:, 0])))
+        plain.append((test_scores <= conformal_quantile(calibration_scores, 0.1)).mean())
+        quantiles = clifford_weighted_quantiles(calibration_scores, calibration_x, test_x, 0.1)
+        weighted.append((test_scores <= quantiles).mean())
+    assert np.mean(plain) < 0.85
+    assert np.mean(weighted) > np.mean(plain) + 0.03
