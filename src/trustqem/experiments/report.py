@@ -56,6 +56,11 @@ def _lookup(summary: dict, scenario: str, method: str, count: int, keep: int) ->
     return None
 
 
+def _is_control(scenario: str) -> bool:
+    """The no-drift control of an experiment (D0_no_drift, E0_no_drift)."""
+    return scenario.endswith("_no_drift")
+
+
 def _scenario_label(scenario: str) -> str:
     """'D4_thermal_relaxation' -> 'D4 thermal relaxation'."""
     return scenario.replace("_", " ")
@@ -134,7 +139,7 @@ def write_verdict(summary: dict, alpha: float, path: Path,
                  f"(holds: {abs(monday['coverage']['mean'] - target) <= 0.02}); ZNE bootstrap "
                  f"{zne['coverage']['mean']:.3f} (under 0.85: {zne['coverage']['mean'] < 0.85})")
     counts = sorted({e["K"] for e in summary["intervals"] if e["method"] == "R3_oracle" and e["K"] <= 100})
-    drifted = sorted({e["scenario"] for e in summary["intervals"]} - {"monday", "D0_no_drift"})
+    drifted = sorted(s for s in {e["scenario"] for e in summary["intervals"]} - {"monday"} if not _is_control(s))
     drops = {s: target - _lookup(summary, s, "R0_frozen", 0, -1)["coverage"]["mean"] for s in drifted}
     lines.append(f"- **H2** scenarios losing >= 10 points: {sum(d >= 0.10 for d in drops.values())} of {len(drops)}")
     lines.append("- **H3** per scenario (frozen coverage; smallest K <= 100 that restores it):")
@@ -148,7 +153,7 @@ def write_verdict(summary: dict, alpha: float, path: Path,
     for scenario in sorted({a["scenario"] for a in summary["alarms"]}):
         rates = [a["detection_rate"] for a in summary["alarms"] if a["scenario"] == scenario and a["K"] == 100]
         if rates:
-            kind = "false-alarm rate" if scenario == "D0_no_drift" else "power"
+            kind = "false-alarm rate" if _is_control(scenario) else "power"
             lines.append(f"  - {scenario}: {kind} {min(rates):.2f} to {max(rates):.2f}")
     path.write_text("\n".join(lines) + "\n")
 
