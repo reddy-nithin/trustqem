@@ -123,10 +123,11 @@ def plot_recalibration_budget(summary: dict, alpha: float) -> Figure:
     return figure
 
 
-def write_verdict(summary: dict, alpha: float, path: Path) -> None:
+def write_verdict(summary: dict, alpha: float, path: Path,
+                  title: str = "Verdict (pre-registered rules and Amendment 1, docs/HYPOTHESES.md)") -> None:
     """Apply the pre-registered rules (with Amendment 1) and write a short markdown verdict."""
     target = 1 - alpha
-    lines = ["# Verdict (pre-registered rules and Amendment 1, docs/HYPOTHESES.md)", ""]
+    lines = [f"# {title}", ""]
     monday = _lookup(summary, "monday", "conformal_monday", 0, -1)
     zne = _lookup(summary, "monday", "zne_bootstrap", 0, -1)
     lines.append(f"- **H1** Monday conformal coverage {monday['coverage']['mean']:.3f} "

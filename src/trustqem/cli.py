@@ -4,9 +4,9 @@ import argparse
 import logging
 from pathlib import Path
 
-from trustqem.experiments import drift
+from trustqem.experiments import device, drift
 
-EXPERIMENTS = {"drift": drift}
+EXPERIMENTS = {"device": device, "drift": drift}
 
 
 def main() -> None:
