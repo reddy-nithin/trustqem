@@ -84,9 +84,10 @@ thermal 0.674, readout 0.788, combined 0.446. ZNE + bootstrap also fails everywh
 - Unweighted R1 and R2 confirm the pilot: they recover most of the loss but sit 3 to 7 points low.
 - **k matters.** With pure Clifford twins (k = 0), R1W over-covers (0.90 to 0.98) with widths up to 2.35× oracle,
   because no pure Clifford row resembles a mid-valued random row. k = 2 is in between and noisier. k = 4 to 8 works.
-  These twins stay classically simulable: stabilizer-rank simulation costs grow with k, not with qubit count.
+  These twins stay classically simulable: stabilizer-rank simulation cost grows exponentially in k but only
+  polynomially in qubit count.
 - **Budget.** With k = 8, K = 25 already restores coverage in every scenario (0.894 to 0.915), at widths up to 1.3×
-  oracle. Widths reach the oracle's by K = 50 to 100. At K = 10 coverage is fine but widths are 1.5 to 2.4× oracle.
+  oracle. Widths reach the oracle's by K = 50 to 100. At K = 10 coverage is fine but widths are 1.3 to 2.3× oracle.
 
 **R4 (retrain) comparison.** Retraining on N = 50 to 200 labeled drifted circuits, plus 100 more for calibration,
 also gives 0.88 to 0.90 coverage, with widths 10 to 25% narrower than R1W, because the retrained model is more
