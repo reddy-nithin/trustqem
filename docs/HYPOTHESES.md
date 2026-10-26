@@ -125,6 +125,21 @@ and the pilot is reported alongside; otherwise the pilot is the verdict.
 **Disclosure.** Before this amendment a smoke run (60 Monday circuits, scenarios E0 and E5, 2 repeats) checked that
 the code runs. Its numbers were seen. Nothing above was changed because of them.
 
+**Correction to the basis column (2026-10-26, after checking the full papers).** The scenarios, magnitudes and rules
+above are unchanged; only the cited support is corrected.
+- Burnett et al. 2019: supported. T1 "can vary by more than a factor 2" for both qubits, over about 60 hours of
+  repeated measurement (standard deviation about 20% of the mean).
+- Klimov et al. 2018: supported. T1 "can fluctuate by an order of magnitude on 15 minute timescales". These are
+  Google (Xmon) qubits, not IBM qubits.
+- Carroll et al. 2022: shows on IBM transmons that T1 dips when a defect (two-level system) drifts into resonance,
+  tracked over 272 hours, but gives no size such as 10x. It supports that the mechanism occurs on IBM devices, not the
+  magnitude.
+- arXiv 2505.06165 (Das and Ghosh): the "up to 300%" figure is not in the paper. It shows qualitatively that single
+  qubits on ibm_kyiv (for example its qubit 8) have large day-to-day X-gate error swings over 12 days, and that some
+  CNOT links spike on certain days, with most CNOT errors between 1e-2 and 1e-1. The E2 cz x3 and E4 x1.5 multipliers
+  therefore rest on this qualitative evidence and on the FakeFez spread (90th-percentile cz error 3.7x the median),
+  and should be read as assumptions.
+
 ### Amendment 3 (2026-10-25, Stage 4, before any hardware job)
 
 **Question.** Do the error bars restored by R1W hold on a real IBM device, when the model was trained only on

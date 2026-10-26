@@ -198,9 +198,11 @@ obvious options to weigh.
   cancel them, so real folded noise may grow less than 3x and 5x.
 - Readout error is not amplified by folding; both ZNE and the learned model see it as a fixed bias.
 - The E3 readout multiplier is an assumption (no published day-to-day readout figure was found). The other
-  magnitudes rest on Klimov et al. 2018, Burnett et al. 2019, Carroll et al. 2022 and arXiv 2505.06165. arXiv was
-  not reachable from the build container, so these figures were taken from abstracts and search summaries and
-  should be checked against the full papers before the poster.
+  magnitudes rest on Klimov et al. 2018, Burnett et al. 2019, Carroll et al. 2022 and arXiv 2505.06165. Checked
+  against the full papers on 2026-10-26: Burnett (T1 varies by more than 2x over about 60 hours) and Klimov (an
+  order of magnitude within 15 minutes, on Google qubits) hold; Carroll shows the mechanism on IBM qubits but no
+  magnitude; the "300%" attributed to 2505.06165 is not in that paper. The gate-error multipliers in E2 and E4 are
+  therefore assumptions. See the correction under Amendment 2 in HYPOTHESES.md.
 - All repeats share one simulated pool per scenario, so CIs understate pool-to-pool variation (the H4 gap between
   pilot and full is an example).
 - The H3 rule lets the best k and smallest K be chosen after the fact; the fixed cells (k = 4 and 8 at K = 100) are
