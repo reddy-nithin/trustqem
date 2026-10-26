@@ -10,7 +10,7 @@ Each session (one day on the device) runs 180 circuits: 60 test circuits, 60 ora
 ideal values we compute classically, to give a labeled baseline) and 60 near-Clifford twins with 8 non-Clifford
 rotations each. Every circuit runs at fold scales 1, 3 and 5 with 1000 shots: 540 circuit executions and 540,000
 shots per session. IBM's documented formula (about 2 s per job plus 250 µs reset time and the circuit time per shot)
-puts that at about 140 s of QPU time. Two sessions use about 280 s of the Open Plan's 600 s. `submit` refuses to send
+puts that at about 140 s of QPU time. Two sessions use about 280 s of the Open Plan's 600 s per rolling 28-day window. `submit` refuses to send
 a job estimated above 200 s unless you add `--force`.
 
 The model is never trained on hardware data: "Monday" is simulated from the device's calibration on the first

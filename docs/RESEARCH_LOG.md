@@ -186,8 +186,10 @@ time) per shot. FakeFez's default rep_delay is 250 µs, while the folded circuit
 | one Tuesday: 40 test + 40 twins (one k) | 80 | 240 | 240,000 | 63 s |
 | Monday training set on hardware (300 train + 100 calibration) | 400 | 1,200 | 1,200,000 | 308 s |
 
-One Tuesday fits the Open Plan's 240 s per day. A hardware-trained Monday does not fit in one day and would take half
-of the 600 s monthly allowance. Training on a simulator with the device's calibration, or halving shots, are the
+One Tuesday fits easily in the Open Plan's 600 s per rolling 28-day window. A hardware-trained Monday would take half
+of that allowance. (Corrected 2026-10-26: this entry first described the plan as 240 s per day and 600 s per month.
+IBM's plans overview gives 10 minutes per 28-day rolling window and no daily limit. The budget lines in
+results/device/*/verdict.md and budget.json were written with the old wording and were not regenerated.) Training on a simulator with the device's calibration, or halving shots, are the
 obvious options to weigh.
 
 **Caveats.**
