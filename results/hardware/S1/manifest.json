@@ -1,0 +1,931 @@
+{
+  "session": {
+    "session": "S1",
+    "backend_name": "ibm_fez",
+    "physical_qubits": [
+      144,
+      145,
+      146,
+      147
+    ],
+    "seed": 4004,
+    "test_circuits": 60,
+    "oracle_circuits": 60,
+    "twin_circuits": 60,
+    "twin_non_clifford_count": 8,
+    "shots": 1000,
+    "fold_scales": [
+      1.0,
+      3.0,
+      5.0
+    ],
+    "qubit_count": 4,
+    "max_layers": 12,
+    "cx_probability_per_pair": 0.5,
+    "dry_run": false
+  },
+  "prepared_at": "2026-10-26T15:29:22.734721+00:00",
+  "records": [
+    {
+      "layer_count": 10,
+      "cx_count": 11,
+      "non_clifford_count": 40
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 16,
+      "non_clifford_count": 44
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 16,
+      "non_clifford_count": 44
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 10,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 1,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 13,
+      "non_clifford_count": 32
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 8,
+      "non_clifford_count": 32
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 6,
+      "non_clifford_count": 12
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 13,
+      "non_clifford_count": 36
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 2,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 3,
+      "non_clifford_count": 20
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 9,
+      "non_clifford_count": 16
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 10,
+      "non_clifford_count": 24
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 2,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 7,
+      "non_clifford_count": 12
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 7,
+      "non_clifford_count": 20
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 11,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 4,
+      "non_clifford_count": 16
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 13,
+      "non_clifford_count": 24
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 23,
+      "non_clifford_count": 44
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 19,
+      "non_clifford_count": 48
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 10,
+      "non_clifford_count": 16
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 2,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 21,
+      "non_clifford_count": 48
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 7,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 4,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 14,
+      "non_clifford_count": 36
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 6,
+      "non_clifford_count": 20
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 13,
+      "non_clifford_count": 36
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 12,
+      "non_clifford_count": 36
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 8,
+      "non_clifford_count": 24
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 8,
+      "non_clifford_count": 16
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 20,
+      "non_clifford_count": 40
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 1,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 10,
+      "non_clifford_count": 20
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 4,
+      "non_clifford_count": 12
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 11,
+      "non_clifford_count": 20
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 24,
+      "non_clifford_count": 48
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 8,
+      "non_clifford_count": 24
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 4,
+      "non_clifford_count": 20
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 2,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 15,
+      "non_clifford_count": 44
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 2,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 13,
+      "non_clifford_count": 32
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 15,
+      "non_clifford_count": 48
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 7,
+      "non_clifford_count": 12
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 6,
+      "non_clifford_count": 12
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 5,
+      "non_clifford_count": 20
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 11,
+      "non_clifford_count": 32
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 11,
+      "non_clifford_count": 20
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 15,
+      "non_clifford_count": 32
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 19,
+      "non_clifford_count": 48
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 15,
+      "non_clifford_count": 36
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 3,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 13,
+      "non_clifford_count": 40
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 6,
+      "non_clifford_count": 12
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 4,
+      "non_clifford_count": 12
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 10,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 13,
+      "non_clifford_count": 44
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 8,
+      "non_clifford_count": 32
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 13,
+      "non_clifford_count": 36
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 5,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 2,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 10,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 9,
+      "non_clifford_count": 24
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 14,
+      "non_clifford_count": 36
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 10,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 1,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 9,
+      "non_clifford_count": 24
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 19,
+      "non_clifford_count": 48
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 2,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 15,
+      "non_clifford_count": 40
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 10,
+      "non_clifford_count": 24
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 8,
+      "non_clifford_count": 12
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 13,
+      "non_clifford_count": 40
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 22,
+      "non_clifford_count": 48
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 9,
+      "non_clifford_count": 16
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 10,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 11,
+      "non_clifford_count": 24
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 10,
+      "non_clifford_count": 16
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 15,
+      "non_clifford_count": 40
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 15,
+      "non_clifford_count": 32
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 3,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 14,
+      "non_clifford_count": 40
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 5,
+      "non_clifford_count": 16
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 1,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 12,
+      "non_clifford_count": 32
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 8,
+      "non_clifford_count": 20
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 14,
+      "non_clifford_count": 40
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 11,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 24,
+      "non_clifford_count": 48
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 11,
+      "non_clifford_count": 36
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 9,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 8,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 2,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 12,
+      "non_clifford_count": 24
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 16,
+      "non_clifford_count": 44
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 12,
+      "non_clifford_count": 32
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 7,
+      "non_clifford_count": 16
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 17,
+      "non_clifford_count": 48
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 6,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 10,
+      "non_clifford_count": 24
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 9,
+      "non_clifford_count": 20
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 3,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 16,
+      "non_clifford_count": 36
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 13,
+      "non_clifford_count": 40
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 6,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 6,
+      "non_clifford_count": 20
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 18,
+      "non_clifford_count": 36
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 10,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 9,
+      "non_clifford_count": 24
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 8,
+      "non_clifford_count": 16
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 10,
+      "non_clifford_count": 28
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 15,
+      "non_clifford_count": 36
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 4,
+      "non_clifford_count": 12
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 16,
+      "non_clifford_count": 40
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 6,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 16,
+      "non_clifford_count": 44
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 4,
+      "non_clifford_count": 12
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 1,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 2,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 19,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 16,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 2,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 11,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 3,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 17,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 15,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 21,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 2,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 5,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 8,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 4,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 10,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 13,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 14,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 16,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 5,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 3,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 10,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 19,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 1,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 6,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 16,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 10,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 6,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 2,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 15,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 16,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 16,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 12,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 19,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 12,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 7,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 15,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 2,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 3,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 14,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 9,
+      "cx_count": 13,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 5,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 11,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 7,
+      "cx_count": 11,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 12,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 2,
+      "cx_count": 2,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 1,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 9,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 10,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 6,
+      "cx_count": 9,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 13,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 18,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 13,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 12,
+      "cx_count": 21,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 3,
+      "cx_count": 2,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 8,
+      "cx_count": 11,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 1,
+      "cx_count": 1,
+      "non_clifford_count": 4
+    },
+    {
+      "layer_count": 5,
+      "cx_count": 5,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 11,
+      "cx_count": 13,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 17,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 4,
+      "cx_count": 7,
+      "non_clifford_count": 8
+    },
+    {
+      "layer_count": 10,
+      "cx_count": 15,
+      "non_clifford_count": 8
+    }
+  ],
+  "estimated_qpu_seconds": 139.7
+}
