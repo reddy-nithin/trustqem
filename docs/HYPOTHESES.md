@@ -184,3 +184,13 @@ is tested. If only S1 completes before the poster deadline, S1 alone is reported
 git-ignored `results/hardware/dryrun/`) to check that every step runs. Its numbers are simulated, not hardware
 data. One descriptive number was corrected from it: the expected width of R1W's 95% coverage interval, first
 written as ±4 points, is ±5 in the rehearsal (0.833 to 0.931). No rule, method or threshold changed.
+
+**Interim look (2026-10-26, after session 1, before session 2).** Session 1 ran on ibm_fez on 2026-10-26 (job
+dbfn4hfpc3tc739nr2hg, qubits 144 to 147, 145 s charged). Before session 2 we analyse session 1 alone, to check that
+the hardware data are sound (oracle circuits track their ideal values, signal shrinks with fold scale as the
+simulator predicts, analysis runs on real counts) before spending more QPU time, and so that a one-session report
+exists if session 2 fails. The interim analysis runs on a copy of S1 under `results/interim/hardware/` and does not
+touch `results/hardware/`. Session 2's circuits, qubits, settings, methods and pass rules stay exactly as above
+whatever the interim shows. If it reveals a defect in how jobs are built or read, the fix and its reason will be
+recorded as a new amendment before session 2 runs; if the method itself does poorly, nothing is changed for this
+study.
