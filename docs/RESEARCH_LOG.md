@@ -213,3 +213,31 @@ E0 as a drift scenario ("2 of 6"). Fixed to treat any `*_no_drift` as the contro
 unchanged. Adding qiskit-ibm-runtime moved python-dateutil from 3.0.0 to 2.9.0.post0 in the lockfile (the qiskit,
 qiskit-aer and scikit-learn pins did not move). The full run was restarted once because a background job limit of
 2 hours was too close to its 86-minute runtime.
+
+## 2026-10-26: Stage 4 interim look at hardware session 1
+
+Declared in HYPOTHESES.md (after Amendment 3) before it ran. Session 1: ibm_fez, qubits 144 to 147, job
+dbfn4hfpc3tc739nr2hg, 540 executions at 1000 shots, 145 s charged against a 140 s estimate. Analysed on a copy under
+`results/interim/hardware/`; `results/hardware/` is untouched and session 2 is unchanged.
+
+**Data checks.** Measured values track the ideal ones: correlation 0.992 (oracle), 0.995 (test) and 0.995 (twins) at
+fold scale 1, falling to 0.96 to 0.97 at scale 5, and 0.991 to 0.995 for each of the seven observables. Reversing the
+bit order drops the oracle correlation to 0.083, so counts are read in the right order. Folding behaves as modelled:
+attenuation 0.930, 0.864, 0.809 at scales 1, 3, 5 (simulator 0.955, 0.911, 0.869), linearity 1.89 (simulator 2.01).
+The device is noisier than the simulated Monday at every scale.
+
+**Interim result (one session, 60 test circuits, 95% circuit-bootstrap CIs).**
+
+| method | coverage | mean width |
+|---|---|---|
+| R0 frozen | 0.667 (0.614 to 0.717) | 0.087 |
+| ZNE + bootstrap | 0.774 (0.736 to 0.814) | 0.113 |
+| R1 K = 60 | 0.914 (0.867 to 0.940) | 0.167 |
+| R2 K = 60 | 0.918 (0.871 to 0.948) | 0.178 |
+| R1W K = 60 | 0.902 (0.855 to 0.931) | 0.157 |
+| R3 oracle K = 60 | 0.917 (0.879 to 0.945) | 0.175 |
+
+H2-hw holds for S1 (frozen 0.667 < 0.87). H3-hw passes for S1: R1W at K = 60 covers 0.902 at 0.90x the oracle's
+width; at K = 25 it covers 0.897. Test MAE 0.038 (Stage 3 simulation about 0.02). The drift alarm fires
+(p = 1.1e-12). Unweighted R1 and R2 also restore coverage here, so on this session the weighting buys narrower bars
+(0.157 against 0.167 and 0.178), not coverage. One session; the verdict waits for session 2.
