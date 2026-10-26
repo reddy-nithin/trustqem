@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 ROLES = ("test", "oracle", "twin")
 SUB_JOB_OVERHEAD_SECONDS = 2.0      # IBM docs, "Estimate job run time"
-DEFAULT_BUDGET_CAP_SECONDS = 200.0  # below the Open Plan's 240 s per day
+DEFAULT_BUDGET_CAP_SECONDS = 200.0  # a third of the Open Plan's 600 s per rolling 28 days
 
 
 @dataclass(frozen=True)

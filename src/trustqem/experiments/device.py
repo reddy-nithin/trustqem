@@ -140,7 +140,7 @@ def hardware_budget(profile: DeviceProfile, calibration: DeviceCalibration, conf
         "stage4_day_test_plus_twins": {"test_circuits": profile.budget_test_circuits,
                                        "twin_circuits": profile.budget_twin_circuits, **day},
         "monday_training_on_hardware": block(profile.budget_monday_circuits),
-        "open_plan_limits_seconds": {"per_day": 240, "per_month": 600},
+        "open_plan_limits_seconds": {"per_28_days": 600},
     }
 
 
@@ -167,7 +167,7 @@ def _headline_lines(summary: dict, scenarios: list[str], count: int) -> list[str
 
 def _budget_lines(budget: dict) -> list[str]:
     """Plain-language summary of the hardware budget."""
-    lines = ["", "## Hardware budget (IBM Open Plan: 240 s per day, 600 s per month)", ""]
+    lines = ["", "## Hardware budget (IBM Open Plan: 600 s per rolling 28 days)", ""]
     for name in ("stage4_day_test_plus_twins", "monday_training_on_hardware"):
         block = budget[name]
         lines.append(f"- {name}: {block['circuits']} circuits x {block['fold_scales']} fold scales x "
