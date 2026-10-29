@@ -1,0 +1,7 @@
+{
+  "job_id": "dbhlojmne4hc73bd5htg",
+  "backend": "ibm_fez",
+  "submitted_at": "2026-10-29T14:46:38.358014+00:00",
+  "estimated_qpu_seconds": 139.7,
+  "dry_run": false
+}
