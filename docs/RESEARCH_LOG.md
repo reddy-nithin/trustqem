@@ -241,3 +241,39 @@ H2-hw holds for S1 (frozen 0.667 < 0.87). H3-hw passes for S1: R1W at K = 60 cov
 width; at K = 25 it covers 0.897. Test MAE 0.038 (Stage 3 simulation about 0.02). The drift alarm fires
 (p = 1.1e-12). Unweighted R1 and R2 also restore coverage here, so on this session the weighting buys narrower bars
 (0.157 against 0.167 and 0.178), not coverage. One session; the verdict waits for session 2.
+
+## 2026-10-29: Stage 4 hardware session 2 and verdict
+
+Session 2: ibm_fez, same qubits (144 to 147) and same 180 circuits as session 1, prepared with `--pair-with S1`,
+job dbhlojmne4hc73bd5htg, 540 executions at 1000 shots, 145 s charged against a 140 s estimate (290 s used in total
+for both sessions). Nothing was changed after the interim look.
+
+**Calibration change from S1.** cz error fell on all three links (0.0028, 0.0020, 0.0025 to 0.0016, 0.0018, 0.0024)
+and readout error fell on qubits 144 and 146. Qubit 147 got worse (T1 189 to 128 µs, T2 150 to 116 µs) and qubit
+145's p10 readout error rose from 1.3% to 1.9%. Single-qubit gate errors reported by IBM were identical on both
+days. Folding behaved as on S1: attenuation 0.928, 0.869, 0.817 at scales 1, 3, 5 (simulator 0.961, 0.925, 0.891),
+linearity 1.93 (simulator 1.99).
+
+**Result (S2, 60 test circuits, 420 rows, 95% circuit-bootstrap CIs).**
+
+| method | coverage | mean width |
+|---|---|---|
+| R0 frozen | 0.648 (0.590 to 0.702) | 0.087 |
+| ZNE + bootstrap | 0.717 (0.669 to 0.762) | 0.114 |
+| R1 K = 60 | 0.900 (0.840 to 0.955) | 0.165 |
+| R2 K = 60 | 0.920 (0.852 to 0.962) | 0.175 |
+| R1W K = 60 | 0.905 (0.864 to 0.952) | 0.166 |
+| R3 oracle K = 60 | 0.914 (0.852 to 0.950) | 0.169 |
+| R1W K = 25 | 0.911 (0.829 to 0.955) | 0.176 |
+
+S1 rescored in the final run gives the same numbers as the interim look (R1W K = 60: 0.902, width 0.157, 0.90x
+oracle).
+
+**Verdict (Amendment 3).** H2-hw holds in both sessions (frozen 0.667 and 0.648, both below 0.87). H3-hw passes in
+both sessions: R1W at K = 60 covers 0.902 (S1) and 0.905 (S2), each 95% CI contains 0.90, at 0.90x and 0.98x the
+oracle's width. Test MAE 0.038 and 0.039. The drift alarm fires in both (p = 1.1e-12 and 5.7e-12). As on S1,
+unweighted R1 and R2 also restore coverage on S2, and on S2 the weighting no longer buys narrower bars (0.166
+against R1's 0.165). So the hardware evidence supports Clifford recalibration in general; it does not single out
+the weighted version. With 60 test circuits per session the CIs are about ±5 points, so this is evidence, not proof.
+Outputs: `results/hardware/verdict.md`, `results/hardware/S{1,2}/summary.json`,
+`results/hardware/coverage_by_session.png`.
