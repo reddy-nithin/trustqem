@@ -5,10 +5,10 @@ import logging
 from pathlib import Path
 
 from trustqem import hardware
-from trustqem.experiments import device, drift, healing
+from trustqem.experiments import canary_scale, device, drift, healing
 from trustqem.experiments import hardware as hardware_experiment
 
-EXPERIMENTS = {"device": device, "drift": drift, "healing": healing}
+EXPERIMENTS = {"canary_scale": canary_scale, "device": device, "drift": drift, "healing": healing}
 HARDWARE_STEPS = ("check", "prepare", "submit", "fetch", "analyze")
 
 

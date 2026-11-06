@@ -54,3 +54,34 @@ def test_healing_runs_once_and_the_monitor_restarts_from_the_new_reference() -> 
     logs = run_self_healing(rng.exponential(size=60), sessions, "monday", rng)
     assert healed_days == [4]                       # one alarm at the drift, none after re-referencing
     assert [log.coverage for log in logs] == [0.5] * 3 + [1.0] * 5
+
+
+def test_clifford_rotation_table_matches_the_rotations() -> None:
+    from qiskit import QuantumCircuit
+    from qiskit.quantum_info import Operator
+
+    from trustqem.experiments.canary_scale import to_clifford_gates
+    for name in ("rx", "ry", "rz"):
+        for k in range(4):
+            circuit = QuantumCircuit(1)
+            getattr(circuit, name)(k * np.pi / 2, 0)
+            assert Operator(to_clifford_gates(circuit)).equiv(Operator(circuit))
+
+
+def test_stabilizer_canaries_match_statevector_on_a_small_chip() -> None:
+    from qiskit.quantum_info import Pauli, Statevector
+
+    from trustqem.circuits import build_clifford_twin, build_random_records
+    from trustqem.experiments.canary_scale import ideal_values, observable_labels, to_clifford_gates
+    rng = np.random.default_rng(4)
+    record = build_random_records(1, 5, 8, 0.5, rng)[0]
+    twin = build_clifford_twin(record, 0, rng).circuit
+    observables = observable_labels(5)
+    state = Statevector(twin)
+    expected = []
+    for qubits in observables:
+        label = ["I"] * 5
+        for q in qubits:
+            label[4 - q] = "Z"
+        expected.append(state.expectation_value(Pauli("".join(label))).real)
+    assert np.allclose(ideal_values(to_clifford_gates(twin), observables), expected)
