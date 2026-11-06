@@ -334,3 +334,11 @@ qubits only 14% (k = 2) and 16% (k = 4) of twin observables have |ideal| > 0.1, 
 qubits k = 4 gave 32% against 71%. A Clifford observable with ideal value 0 stays at 0 under depolarizing noise, so
 most twin rows carry no information about gate-noise drift. That matches the pattern: the drifts that move zeros
 (readout, thermal relaxation) are repaired; the ones that only shrink nonzero values are not.
+
+**Amendment 5, fix 1 (R1N, exploratory): FAILS the other way.** `results/nonzero/` reruns the drift study on the
+cached pools with R1N added. Every other method reproduces the Amendment 4 summaries exactly at all five sizes
+(checked entry by entry). R1N over-corrects: at n = 12, k = 4, coverage is 0.96 to 0.99 in every scenario, with
+widths 1.8 to 5.6x the oracle's (D0 2.1x, D2 3.8x, D6 4.4x). It fails the width rule everywhere except D0 at 4 qubits.
+Reading: the nonzero twin rows have larger residuals than typical test rows, many of which have ideal values near 0,
+so dropping the zeros swaps "twins too easy" for "twins too hard". The weighting cannot undo a shift this large.
+Fix 1 is dropped; fix 2 (k = 16 twins, Amendment 5) is next, which changes the twins themselves.

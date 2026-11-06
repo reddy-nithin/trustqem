@@ -31,5 +31,5 @@ if __name__ == "__main__":
     results = Path(sys.argv[1] if len(sys.argv) > 1 else "results/drift")
     rows = table(results, [4, 6, 8, 10, 12], sys.argv[2] if len(sys.argv) > 2 else "R1W_clifford_weighted")
     for r in rows:
-        print(f"n={r['n']:2d} {r['scenario']:24s} k={r['k']} frozen {r['frozen']:.3f} R1W {r['coverage']:.3f} "
+        print(f"n={r['n']:2d} {r['scenario']:24s} k={r['k']} frozen {r['frozen']:.3f} repaired {r["coverage"]:.3f} "
               f"width/oracle {r['width_ratio']:.2f} {'PASS' if r['pass'] else 'FAIL'}")
