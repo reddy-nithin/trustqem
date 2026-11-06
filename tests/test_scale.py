@@ -110,3 +110,20 @@ def test_nonzero_rerun_reuses_drift_pools_and_reproduces_r1w(tmp_path, monkeypat
     second = json.loads((output / "rows.json").read_text())
     assert second == first                          # same seeds and splits, so the rerun is identical
     assert any(r["method"] == "R1N_nonzero_weighted" for r in second)
+
+
+def test_added_twin_pools_leave_the_old_pools_alone_and_resume(tmp_path, monkeypatch) -> None:
+    import json
+    import pickle
+
+    from trustqem.experiments import twins_k
+    monkeypatch.setenv("TRUSTQEM_CACHE", str(tmp_path / "cache"))
+    output = twins_k.run("smoke", tmp_path / "results", keep=4)
+    rows = json.loads((output / "rows.json").read_text())
+    assert {r["non_clifford_count"] for r in rows if r["method"] == "R1W_clifford_weighted"} == {0, 2, 4}
+    with open(tmp_path / "cache" / "drift_smoke" / "pools.pkl", "rb") as file:
+        assert pickle.load(file).sizes.twin_non_clifford_counts == (0, 2)      # the drift cache is untouched
+    parts = sorted(p.name for p in (tmp_path / "cache" / "twins_k4_smoke").iterdir())
+    assert parts == ["monday_twins_k4.pkl", "tuesday_D0_no_drift_twins_k4.pkl", "tuesday_D2_depolarizing_x2_twins_k4.pkl"]
+    again = twins_k.run("smoke", tmp_path / "results", keep=4)                  # resumes from the saved parts
+    assert json.loads((again / "rows.json").read_text()) == rows

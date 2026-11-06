@@ -263,6 +263,13 @@ def run(profile_name: str, results_root: Path, output_dir: Path | None = None) -
     output_dir.mkdir(parents=True, exist_ok=True)
     pools_path.parent.mkdir(parents=True, exist_ok=True)
     pools = load_or_build_pools(config, profile.sizes, pools_path)
+    return analyze(pools, profile, output_dir)
+
+
+def analyze(pools: ExperimentPools, profile: DriftProfile, output_dir: Path) -> Path:
+    """Every repeat on finished pools, then results, figures and the verdict in `output_dir`."""
+    profile, config = replace(profile, sizes=pools.sizes), pools.config
+    output_dir.mkdir(parents=True, exist_ok=True)
     bootstrap = _bootstrap_by_pool(pools, profile)
 
     all_rows, all_alarms = [], []
