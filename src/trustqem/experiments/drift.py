@@ -56,6 +56,21 @@ class DriftProfile:
     random_seed: int = 42
     retrain_counts: tuple[int, ...] = ()        # N labeled drifted circuits for R4; empty skips R4
     retrain_calibration_circuits: int = 100
+    qubit_count: int = 4
+
+
+def scale_profile(qubit_count: int) -> DriftProfile:
+    """Amendment 4 scaling study: doubled sizes, twins k in {2, 4} (plus 0 and 8 at 4 qubits), seed 5050 + n."""
+    keeps = (0, 2, 4, 8) if qubit_count == 4 else (2, 4)
+    return DriftProfile(
+        sizes=PoolSizes(monday_circuits=1000, monday_twin_sources=400, tuesday_circuits=800,
+                        twin_non_clifford_counts=keeps, scenarios=tuple(DRIFT_SCENARIOS)),
+        train_circuits=600, calibration_circuits=200, test_circuits=200,
+        recalibration_counts=(10, 25, 50, 100, 200), repeats=20, random_seed=5050 + qubit_count,
+        qubit_count=qubit_count)
+
+
+SCALE_QUBIT_COUNTS = (4, 6, 8, 10, 12)
 
 
 PROFILES = {
@@ -76,6 +91,7 @@ PROFILES = {
                         twin_non_clifford_counts=(0, 2, 4, 8), scenarios=tuple(DRIFT_SCENARIOS)),
         train_circuits=300, calibration_circuits=100, test_circuits=100,
         recalibration_counts=(10, 25, 50, 100, 200), repeats=20, random_seed=2026, retrain_counts=(50, 100, 200)),
+    **{f"scale_q{n}": scale_profile(n) for n in SCALE_QUBIT_COUNTS},
 }
 
 
@@ -233,7 +249,7 @@ def _retrain_rows(context: _RepeatContext, scenario: str, tuesday: SimulatedPool
 def run(profile_name: str, results_root: Path) -> Path:
     """Run every repeat of the drift experiment and write results, figures and the verdict."""
     profile = PROFILES[profile_name]
-    config = replace(ExperimentConfig(), random_seed=profile.random_seed)
+    config = replace(ExperimentConfig(), random_seed=profile.random_seed, qubit_count=profile.qubit_count)
     output_dir = results_root / "drift" / profile_name
     pools = load_or_build_pools(config, profile.sizes, output_dir / "pools.pkl")
     bootstrap = _bootstrap_by_pool(pools, profile)

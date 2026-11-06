@@ -101,7 +101,8 @@ def prepare_session(session_dir: Path, session: str, backend_name: str, dry_run:
         spec = replace(earlier, session=session, dry_run=dry_run)
         records = load_records(reuse_from)
     else:
-        spec = HardwareSession(session=session, backend_name=backend.name, physical_qubits=choose_chain(backend),
+        chain = choose_chain(backend, sizes.get("qubit_count", HardwareSession.qubit_count))
+        spec = HardwareSession(session=session, backend_name=backend.name, physical_qubits=chain,
                                dry_run=dry_run, **sizes)
         records = build_session_records(spec)
     calibration = load_calibration(backend, spec.physical_qubits)

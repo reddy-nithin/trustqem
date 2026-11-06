@@ -1,9 +1,30 @@
 """Ways to get an expectation value: ideal (statevector), exact noisy (density matrix), and shot-sampled noisy."""
 
+import os
+
 import numpy as np
 from qiskit import QuantumCircuit, transpile
 from qiskit.quantum_info import DensityMatrix, SparsePauliOp, Statevector
 from qiskit_aer import AerSimulator
+
+
+def aer_device_options() -> dict:
+    """Extra AerSimulator options from the environment: TRUSTQEM_AER_DEVICE=GPU and TRUSTQEM_AER_PRECISION=single.
+
+    Default (nothing set) is CPU in double precision, as in every run before Amendment 4.
+    """
+    options = {}
+    device = os.environ.get("TRUSTQEM_AER_DEVICE", "CPU").upper()
+    if device not in ("CPU", "GPU"):
+        raise ValueError(f"TRUSTQEM_AER_DEVICE must be CPU or GPU, got {device}")
+    if device == "GPU":
+        options["device"] = "GPU"
+    precision = os.environ.get("TRUSTQEM_AER_PRECISION", "double").lower()
+    if precision not in ("single", "double"):
+        raise ValueError(f"TRUSTQEM_AER_PRECISION must be single or double, got {precision}")
+    if precision == "single":
+        options["precision"] = "single"
+    return options
 
 
 def build_observable_labels(qubit_count: int) -> list[str]:
@@ -62,14 +83,18 @@ def sampled_probabilities(
     simulator: AerSimulator,
     shots: int,
     random_generator: np.random.Generator,
+    seed_simulator: int | None = None,
 ) -> np.ndarray:
-    """Measure `shots` times in the Z basis and return the fraction of shots that landed on each basis state."""
+    """Measure `shots` times in the Z basis and return the fraction of shots that landed on each basis state.
+
+    The simulator seed is `seed_simulator` if given, otherwise drawn from `random_generator`.
+    """
     qubit_count = circuit.num_qubits
     circuit_with_measurement = circuit.copy()
     circuit_with_measurement.measure_all()
     transpiled = transpile(circuit_with_measurement, simulator, optimization_level=0)
-    counts = simulator.run(
-        transpiled, shots=shots, seed_simulator=int(random_generator.integers(0, 2**31))).result().get_counts()
+    seed = int(random_generator.integers(0, 2**31)) if seed_simulator is None else seed_simulator
+    counts = simulator.run(transpiled, shots=shots, seed_simulator=seed).result().get_counts()
     probabilities = np.zeros(2 ** qubit_count)
     for bitstring, count in counts.items():
         probabilities[int(bitstring, 2)] = count / shots

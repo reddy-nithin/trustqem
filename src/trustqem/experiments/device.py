@@ -26,7 +26,7 @@ from trustqem.device import (
     scale_readout,
     transpile_to_device,
 )
-from trustqem.experiments.drift import DriftProfile, _bootstrap_by_pool, run_repeat
+from trustqem.experiments.drift import DriftProfile, _bootstrap_by_pool, run_repeat, scale_profile
 from trustqem.experiments.pools import PoolSizes, load_or_build_pools
 from trustqem.experiments.report import (
     _lookup,
@@ -92,6 +92,9 @@ PROFILES = {
                         twin_non_clifford_counts=(0, 2, 4, 8), scenarios=tuple(SCENARIO_RECIPES)),
         train_circuits=300, calibration_circuits=100, test_circuits=100,
         recalibration_counts=(10, 25, 50, 100, 200), repeats=20, random_seed=3030, retrain_counts=(50, 100, 200))),
+    # Amendment 4: the device track at 12 qubits, same sizes as the drift scaling study, its own seed
+    "scale_q12": DeviceProfile(replace(scale_profile(12), random_seed=6062,
+                                       sizes=replace(scale_profile(12).sizes, scenarios=tuple(SCENARIO_RECIPES)))),
 }
 
 # IBM's documented estimate (docs: "Estimate job run time"): about 2 s overhead per sub-job, plus
@@ -180,9 +183,10 @@ def run(profile_name: str, results_root: Path) -> Path:
     """Run every repeat of the device experiment and write results, figures, the verdict and the budget."""
     device_profile = PROFILES[profile_name]
     profile = device_profile.drift
-    config = replace(ExperimentConfig(), random_seed=profile.random_seed, noise_scale_factors=FOLD_SCALES)
+    config = replace(ExperimentConfig(), random_seed=profile.random_seed, noise_scale_factors=FOLD_SCALES,
+                     qubit_count=profile.qubit_count)
     output_dir = results_root / "device" / profile_name
-    calibration = load_calibration()
+    calibration = load_calibration(length=profile.qubit_count)
     scenarios = build_scenarios(calibration)
     monday = DeviceCondition("monday", calibration)
     pools = load_or_build_pools(config, profile.sizes, output_dir / "pools.pkl", monday, scenarios)
