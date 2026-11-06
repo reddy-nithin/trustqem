@@ -248,3 +248,22 @@ reason are logged.
 **What will not be claimed.** Coverage beyond 12 qubits. The report says the recalibration and alarm use only
 classically checkable Clifford circuits, so their cost does not grow with chip size, and that coverage at 100+
 qubits is untested.
+
+## Amendment 5 (2026-11-06, written after seeing the H5 failure; everything here is exploratory)
+
+H5 failed from 6 qubits on (RESEARCH_LOG, 2026-11-06). The diagnosis was made after looking: with k fixed, twin
+observables are mostly exactly 0 at larger n (16% with |ideal| > 0.1 at n = 12, k = 4, against 52% for real
+circuits), and a zero stays at zero under depolarizing noise. Two fixes are tried. Both are labeled exploratory in
+every report, and the H5 failure is reported next to them unchanged.
+
+**Fix 1, R1N (nonzero twins).** Same as R1W, but the twin calibration rows are only those whose twin ideal value
+(computed classically) has |ideal| > 0.1. The weighting classifier and the test rows are unchanged. If fewer than 20
+twin rows remain at some K, R1N is not reported at that K. Rerun on the existing pools (same seeds, same splits, so
+R1W must reproduce the Amendment 4 numbers exactly), at n = 4, 6, 8, 10 and 12. Judged by the H5 rule: k in {2, 4},
+K = 100, coverage within 3 points of 0.90 and width under 2x oracle, every scenario. Output in `results/nonzero/`.
+
+**Fix 2, k grows with n.** k is chosen before any coverage is seen, by one rule: the twin-to-real ratio of the share
+of observables with |ideal| > 0.1 should match the 4-qubit k = 4 value (0.33 / 0.73 = 0.45), measured on noiseless
+circuits. At n = 12 this gives k = 16 (twin share 0.27 against 0.53). New twin pools at that k only; the other pools
+are reused. Judged by the same H5 rule with R1W. The cost is stated in every report: the classical cost of a twin's
+ideal value grows roughly as 2^k, so with this fix the recalibration cost does grow with circuit size.

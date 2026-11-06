@@ -40,6 +40,8 @@ from trustqem.recalibrate import (
 
 logger = logging.getLogger(__name__)
 
+NONZERO_IDEAL, NONZERO_MIN_ROWS = 0.1, 20       # Amendment 5, R1N
+
 
 @dataclass(frozen=True)
 class DriftProfile:
@@ -219,6 +221,10 @@ def _evaluate_scenario(context: _RepeatContext, scenario: str, bootstrap: tuple,
                 clifford_ratio_quantile(context.monday_quantile, before, after, profile.alpha))
             add("R1W_clifford_weighted", count, keep,
                 clifford_weighted_quantiles(after, twin_shift, test_shift, profile.alpha))
+            nonzero = np.abs(twin_pool.row_ideal_values[twin_rows]) > NONZERO_IDEAL
+            if nonzero.sum() >= NONZERO_MIN_ROWS:           # Amendment 5, R1N: only twin rows with signal
+                add("R1N_nonzero_weighted", count, keep,
+                    clifford_weighted_quantiles(after[nonzero], twin_shift[nonzero], test_shift, profile.alpha))
             alarms.append({"repeat": repeat, "scenario": scenario, "recalibration_count": count,
                            "non_clifford_count": keep, "p_value": drift_alarm_p_value(
                                per_circuit_mean(before, monday_pool.row_circuit_index[monday_rows]),
@@ -246,13 +252,17 @@ def _retrain_rows(context: _RepeatContext, scenario: str, tuesday: SimulatedPool
     return rows
 
 
-def run(profile_name: str, results_root: Path) -> Path:
-    """Run every repeat of the drift experiment and write results, figures and the verdict."""
+def run(profile_name: str, results_root: Path, output_dir: Path | None = None) -> Path:
+    """Run every repeat of the drift experiment and write results, figures and the verdict.
+
+    Pools always come from (or go to) the drift cache; `output_dir` only moves the outputs (Amendment 5 reruns)."""
     profile = PROFILES[profile_name]
     config = replace(ExperimentConfig(), random_seed=profile.random_seed, qubit_count=profile.qubit_count)
-    output_dir = results_root / "drift" / profile_name
+    pools_path = results_root / "drift" / profile_name / "pools.pkl"
+    output_dir = output_dir or pools_path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
-    pools = load_or_build_pools(config, profile.sizes, output_dir / "pools.pkl")
+    pools_path.parent.mkdir(parents=True, exist_ok=True)
+    pools = load_or_build_pools(config, profile.sizes, pools_path)
     bootstrap = _bootstrap_by_pool(pools, profile)
 
     all_rows, all_alarms = [], []

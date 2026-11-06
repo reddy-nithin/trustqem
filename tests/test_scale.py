@@ -95,3 +95,18 @@ def test_smoke_run_writes_results_when_the_cache_lives_elsewhere(tmp_path, monke
     assert (output / "verdict.md").exists()
     assert (tmp_path / "cache" / "drift_smoke" / "pools.pkl").exists()
     assert not (output / "pools.pkl").exists()
+
+
+def test_nonzero_rerun_reuses_drift_pools_and_reproduces_r1w(tmp_path, monkeypatch) -> None:
+    import json
+
+    from trustqem.experiments import drift, nonzero
+    monkeypatch.setenv("TRUSTQEM_CACHE", str(tmp_path / "cache"))
+    first = json.loads((drift.run("smoke", tmp_path / "results") / "rows.json").read_text())
+    pools_written = (tmp_path / "cache" / "drift_smoke" / "pools.pkl").stat().st_mtime
+    output = nonzero.run("smoke", tmp_path / "results")
+    assert output == tmp_path / "results" / "nonzero" / "smoke"
+    assert (tmp_path / "cache" / "drift_smoke" / "pools.pkl").stat().st_mtime == pools_written
+    second = json.loads((output / "rows.json").read_text())
+    assert second == first                          # same seeds and splits, so the rerun is identical
+    assert any(r["method"] == "R1N_nonzero_weighted" for r in second)
