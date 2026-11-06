@@ -18,6 +18,8 @@ runner="logs/${name}.run.sh"
 {
   echo "#!/usr/bin/env bash"
   echo "cd $(printf '%q' "$PWD")"
+  # tmux hands every session the env of whoever started the tmux server, so clear our settings first
+  echo "unset TRUSTQEM_WORKERS TRUSTQEM_GPUS TRUSTQEM_AER_DEVICE TRUSTQEM_AER_PRECISION TRUSTQEM_CACHE CUDA_VISIBLE_DEVICES"
   echo "export OMP_NUM_THREADS=1"
   for variable in TRUSTQEM_WORKERS TRUSTQEM_GPUS TRUSTQEM_AER_DEVICE TRUSTQEM_AER_PRECISION TRUSTQEM_CACHE \
                   CUDA_VISIBLE_DEVICES; do
