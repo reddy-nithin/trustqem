@@ -59,9 +59,17 @@ _worker_simulators: dict[float, AerSimulator] = {}
 _UNUSED_RNG = np.random.default_rng(0)   # sampled_probabilities needs one; the explicit seed is used instead
 
 
-def _init_worker(simulators: dict[float, AerSimulator]) -> None:
-    """Each worker keeps its own copy of the simulators and runs Aer on one thread (the workers are the parallelism)."""
+def _init_worker(simulators: dict[float, AerSimulator], counter, gpus: list[str]) -> None:
+    """Each worker keeps its own copy of the simulators and runs Aer on one thread (the workers are the parallelism).
+
+    With TRUSTQEM_GPUS="0,1", workers are dealt round-robin onto those GPUs before any CUDA call.
+    """
     global _worker_simulators
+    if gpus:
+        with counter.get_lock():
+            index = counter.value
+            counter.value += 1
+        os.environ["CUDA_VISIBLE_DEVICES"] = gpus[index % len(gpus)]
     for simulator in simulators.values():     # these are this worker's own unpickled copies
         simulator.set_options(max_parallel_threads=1)
     _worker_simulators = simulators
@@ -84,8 +92,10 @@ def run_sampling_tasks(tasks: list[tuple[QuantumCircuit, float]], seeds: list[in
     # spawn, not fork: Aer starts OpenMP threads, and forking a process that has them can hang
     context = multiprocessing.get_context("spawn")
     payload = [(circuit, scale, shots, seed) for (circuit, scale), seed in zip(tasks, seeds, strict=True)]
+    gpus = [gpu for gpu in os.environ.get("TRUSTQEM_GPUS", "").split(",") if gpu.strip()]
+    counter = context.Value("i", 0)
     with ProcessPoolExecutor(workers, mp_context=context, initializer=_init_worker,
-                             initargs=(simulators,)) as executor:
+                             initargs=(simulators, counter, gpus)) as executor:
         return list(executor.map(_sample_task, payload, chunksize=max(1, len(payload) // (workers * 8))))
 
 
