@@ -302,3 +302,11 @@ the healed intervals cover 0.85 to 0.94 against 0.42 to 0.79 for never recalibra
 **Self-healing replayed on hardware** (`results/healing/hardware/`, 200 canary orders). S1: the alarm fires in all
 200 (median martingale about 3e15) and healing lifts coverage from 0.667 to 0.902. S2, three days later: no alarm in
 any order (median 0.08); S1's recalibration still covers 0.890, against 0.905 for recalibrating on S2's own twins.
+
+**Scale of the alarm, 156 qubits** (`results/canary_scale/q156/`, reported, not judged). Pure Clifford canaries on a
+simulated 156-qubit chip (stabilizer method, depolarizing 0.001 / 0.01 plus 1% readout flips; drift = gate errors
+x1.5), 311 Z and ZZ observables, 1,000 shots, 5.7 s per canary on one server core. Raw canary error 0.0294 before
+and 0.0316 after the drift. With 60 reference canaries and 30 per day, the alarm never fired on quiet days in 200
+sequences and caught the drift in all 200, after 2.6 days on average. Caveat: days are resampled from pools of 150
+canaries per condition, so sequences share circuits. This shows the alarm runs at chip size; it says nothing about
+coverage at 156 qubits.
