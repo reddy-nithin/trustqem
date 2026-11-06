@@ -310,3 +310,27 @@ and 0.0316 after the drift. With 60 reference canaries and 30 per day, the alarm
 sequences and caught the drift in all 200, after 2.6 days on average. Caveat: days are resampled from pools of 150
 canaries per condition, so sequences share circuits. This shows the alarm runs at chip size; it says nothing about
 coverage at 156 qubits.
+
+**H5 scaling, 4 to 12 qubits (pre-registered in Amendment 4): FAILS from 6 qubits on.** `scripts/scaling_table.py`
+reads `results/drift/scale_q{n}/summary.json` and checks R1W (k = 2 and 4, K = 100) against 0.90 ± 0.03 and width
+under 2x oracle. At 4 qubits every scenario passes except D5 readout, which over-covers (0.93). At 6, 8 and 12 qubits,
+R1W still passes D0 and D5 but under-covers the gate-noise drifts, with intervals narrower than the oracle's:
+
+| scenario | frozen, 12 q | R1W k=4, 12 q | width / oracle |
+|---|---|---|---|
+| D1 depolarizing x1.5 | 0.805 | 0.832 | 0.81 |
+| D2 depolarizing x2 | 0.725 | 0.806 | 0.74 |
+| D3 bad qubit | 0.789 | 0.816 | 0.72 |
+| D4 thermal relaxation | 0.699 | 0.867 | 0.93 |
+| D6 combined | 0.590 | 0.830 | 0.79 |
+
+R1W closes about a third to two thirds of the gap, not all of it. The 10-qubit run is still going.
+
+Signal check (reported): the share of rows with |ideal| > 0.1 is 0.71, 0.62, 0.58 and 0.52 at 4, 6, 8 and 12 qubits,
+well above the 20% flag. The signal is fine.
+
+Likely cause (diagnostic, after looking): with k fixed at 2 or 4, the twins get more Clifford as circuits grow. At 12
+qubits only 14% (k = 2) and 16% (k = 4) of twin observables have |ideal| > 0.1, against 52% of the real circuits; at 4
+qubits k = 4 gave 32% against 71%. A Clifford observable with ideal value 0 stays at 0 under depolarizing noise, so
+most twin rows carry no information about gate-noise drift. That matches the pattern: the drifts that move zeros
+(readout, thermal relaxation) are repaired; the ones that only shrink nonzero values are not.
