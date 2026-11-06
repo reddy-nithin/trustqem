@@ -251,6 +251,7 @@ def run(profile_name: str, results_root: Path) -> Path:
     profile = PROFILES[profile_name]
     config = replace(ExperimentConfig(), random_seed=profile.random_seed, qubit_count=profile.qubit_count)
     output_dir = results_root / "drift" / profile_name
+    output_dir.mkdir(parents=True, exist_ok=True)
     pools = load_or_build_pools(config, profile.sizes, output_dir / "pools.pkl")
     bootstrap = _bootstrap_by_pool(pools, profile)
 

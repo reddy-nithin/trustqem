@@ -85,3 +85,13 @@ def test_aer_device_options(monkeypatch) -> None:
     monkeypatch.setenv("TRUSTQEM_AER_DEVICE", "tpu")
     with pytest.raises(ValueError):
         aer_device_options()
+
+
+def test_smoke_run_writes_results_when_the_cache_lives_elsewhere(tmp_path, monkeypatch) -> None:
+    from trustqem.experiments import drift
+    monkeypatch.setenv("TRUSTQEM_CACHE", str(tmp_path / "cache"))
+    monkeypatch.setenv("TRUSTQEM_WORKERS", "1")
+    output = drift.run("smoke", tmp_path / "results")
+    assert (output / "verdict.md").exists()
+    assert (tmp_path / "cache" / "drift_smoke" / "pools.pkl").exists()
+    assert not (output / "pools.pkl").exists()

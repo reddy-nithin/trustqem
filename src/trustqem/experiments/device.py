@@ -186,6 +186,7 @@ def run(profile_name: str, results_root: Path) -> Path:
     config = replace(ExperimentConfig(), random_seed=profile.random_seed, noise_scale_factors=FOLD_SCALES,
                      qubit_count=profile.qubit_count)
     output_dir = results_root / "device" / profile_name
+    output_dir.mkdir(parents=True, exist_ok=True)
     calibration = load_calibration(length=profile.qubit_count)
     scenarios = build_scenarios(calibration)
     monday = DeviceCondition("monday", calibration)
