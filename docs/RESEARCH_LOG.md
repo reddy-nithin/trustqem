@@ -277,3 +277,28 @@ against R1's 0.165). So the hardware evidence supports Clifford recalibration in
 the weighted version. With 60 test circuits per session the CIs are about ±5 points, so this is evidence, not proof.
 Outputs: `results/hardware/verdict.md`, `results/hardware/S{1,2}/summary.json`,
 `results/hardware/coverage_by_session.png`.
+
+## 2026-11-06: Amendment 4 setup, reproducibility check, self-healing results
+
+**Moving to the lab server.** Simulations for Amendment 4 run on the UMKC lab server (Ubuntu, Xeon Silver 4210R,
+4x RTX A4000) in tmux, each from a frozen git worktree of one commit. Speed at 12 qubits: 17.4 s per simulation on
+one CPU core, 0.62 s on one GPU, about 2.7 per second with four jobs sharing one GPU, about 10 per second on all four
+GPUs. GPU single precision was slower (1.0 s) and is not used.
+
+**Does the parallel code change anything?** No. The first 40 Monday circuits of the `full` profile and their
+measured probabilities are bit-identical between the Mac (one worker) and the server (24 workers). The full 4-qubit
+`full` run on the server does not reproduce the committed Mac numbers byte for byte (e.g. ZNE bootstrap coverage
+0.831 vs 0.833, D0 frozen 0.891 vs 0.887). Running the original code (commit c2fe941) on the server with the same
+pools gives a summary identical to the new code, so the gap comes from the platform (floating point in model
+training on Linux vs macOS), not from the changes. No verdict changes. Committed results stay the Mac originals.
+
+**H6, self-healing loop, 4 qubits** (`results/healing/scale_q4/`, profile `scale_q4` pools, 200 ten-day sequences
+per scenario, 30 canaries and 30 test circuits per day, k = 4, alarm at 20). H6a passes: no false alarm on any quiet
+day in any scenario. H6b fails as written: after a correct alarm, coverage is 0.902 to 0.913 in five scenarios but
+0.938 under D5 readout drift, more than 3 points above 0.90 (over-coverage). Detection: 99 to 100% within 1.0 to
+3.1 days for D2 to D6; D1 (depolarizing x1.5) is caught in 63% of sequences after 3.9 days on average. On day 10
+the healed intervals cover 0.85 to 0.94 against 0.42 to 0.79 for never recalibrating.
+
+**Self-healing replayed on hardware** (`results/healing/hardware/`, 200 canary orders). S1: the alarm fires in all
+200 (median martingale about 3e15) and healing lifts coverage from 0.667 to 0.902. S2, three days later: no alarm in
+any order (median 0.08); S1's recalibration still covers 0.890, against 0.905 for recalibrating on S2's own twins.
