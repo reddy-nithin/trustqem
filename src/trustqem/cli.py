@@ -7,9 +7,10 @@ from pathlib import Path
 from trustqem import hardware
 from trustqem.experiments import canary_scale, device, drift, healing
 from trustqem.experiments import hardware as hardware_experiment
+from trustqem.experiments import healing_hardware
 
 EXPERIMENTS = {"canary_scale": canary_scale, "device": device, "drift": drift, "healing": healing}
-HARDWARE_STEPS = ("check", "prepare", "submit", "fetch", "analyze")
+HARDWARE_STEPS = ("check", "prepare", "submit", "fetch", "analyze", "heal")
 
 
 def main() -> None:
@@ -59,6 +60,9 @@ def run_hardware_step(arguments: argparse.Namespace) -> None:
               f"job {job_id} submitted; run `fetch` when it has finished")
     elif arguments.step == "fetch":
         print(f"counts saved to {hardware.fetch_session(session_dir)}")
+    elif arguments.step == "heal":
+        output = healing_hardware.run(root, arguments.results / "healing" / root.name)
+        print((output / "verdict.md").read_text())
     else:
         output = hardware_experiment.run(root)
         print((output / "verdict.md").read_text())
