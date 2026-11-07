@@ -370,3 +370,12 @@ E3 readout over-covers at the edge of the band, as at 4 qubits.
 0.5% on quiet days. Detection: D2, D4, D5, D6 caught in 98 to 100% of sequences after 1 to 3 days; D3 in 67% (12 q) and
 97% (8 q); mild D1 in about 23%. After an alarm, coverage at 12 q is 0.82 to 0.92 (never-fix 0.60 to 0.82), so healing
 recovers what R1W can recover and inherits its H5 shortfall. Healing matches daily recalibration within 0.02.
+
+**S3 decision (2026-11-07): run the 12-qubit hardware session despite the H5 gate.** Amendment 4 said S3 runs only if
+H5 is not clearly failing at n = 12. It is failing under gate-noise drift (D1, D2, D3, D6). Nithin decided to run S3
+anyway, because the 12-qubit device track (FakeFez-derived noise, the closest simulation to hardware) passed, so the
+hardware question is still open. Before anything went to IBM, a full FakeFez dry run of the 12-qubit path passed every
+check: 12 connected qubits, 540 circuits each measuring 12 bits, 1,000 shots, and noisy against ideal correlation 0.995
+(test) and 0.996 (oracle), with the signal falling with fold scale (0.96, 0.92, 0.89). The real session was then
+prepared on today's calibration: chain (104, 105, 117, 125, 124, 123, 136, 143, 144, 145, 146, 147), estimate 140 s.
+Its folder is `results/q12/hardware/S3/`, separate from S1 and S2, so S3 gets its own Monday from its own calibration.
