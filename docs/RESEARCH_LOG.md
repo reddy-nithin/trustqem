@@ -342,3 +342,31 @@ widths 1.8 to 5.6x the oracle's (D0 2.1x, D2 3.8x, D6 4.4x). It fails the width 
 Reading: the nonzero twin rows have larger residuals than typical test rows, many of which have ideal values near 0,
 so dropping the zeros swaps "twins too easy" for "twins too hard". The weighting cannot undo a shift this large.
 Fix 1 is dropped; fix 2 (k = 16 twins, Amendment 5) is next, which changes the twins themselves.
+
+**Amendment 5, fix 2 (k = 16 twins at 12 qubits, exploratory): FAILS.** `results/twins_k16/scale_q12/` adds k = 16
+twins to the 12-qubit pools (fresh Monday twin sources, Tuesday twins paired with the same test circuits) and reruns
+the analysis. At K = 100, R1W with k = 16 gains 1 to 3 points over k = 4 under gate-noise drift but still misses the
+band, with widths below the oracle's:
+
+| scenario | frozen | R1W k=4 | R1W k=16 | width / oracle, k=16 |
+|---|---|---|---|---|
+| D1 depolarizing x1.5 | 0.809 | 0.830 | 0.849 | 0.84 |
+| D2 depolarizing x2 | 0.729 | 0.798 | 0.836 | 0.81 |
+| D3 bad qubit | 0.786 | 0.830 | 0.833 | 0.78 |
+| D4 thermal relaxation | 0.699 | 0.866 | 0.870 | 0.93 |
+| D6 combined | 0.588 | 0.836 | 0.848 | 0.85 |
+
+D0, D4 and D5 pass; D1, D2, D3 and D6 fail, the same set as k = 4. (The k = 2 and 4 numbers here differ from the
+Amendment 4 run by up to 0.01 because this analysis draws its own repeats.) Reading: richer twins help a little, so the
+mostly-zero diagnosis is part of the story but not all of it. Gate-noise drift on 144-rotation circuits is not fully
+seen by circuits with 16 rotations. Coverage at 6 to 12 qubits under gate-noise drift stays an open problem.
+
+**Device track at 12 qubits (Amendment 2 rules, FakeFez-derived noise): repair works.** `results/device/scale_q12/`.
+The device-style drifts are milder at 12 qubits (frozen loses 4 to 7 points, so H2 counts 0 of 5). R1W k = 4 at K = 100
+gives 0.896, 0.885, 0.930, 0.881 and 0.900 for E1 to E5 against an oracle of 0.89, with widths within 1.2x the oracle's.
+E3 readout over-covers at the edge of the band, as at 4 qubits.
+
+**H6 self-healing at 8 and 12 qubits: H6a passes, H6b fails** (`results/healing/scale_q{8,12}/`). False alarms 0 to
+0.5% on quiet days. Detection: D2, D4, D5, D6 caught in 98 to 100% of sequences after 1 to 3 days; D3 in 67% (12 q) and
+97% (8 q); mild D1 in about 23%. After an alarm, coverage at 12 q is 0.82 to 0.92 (never-fix 0.60 to 0.82), so healing
+recovers what R1W can recover and inherits its H5 shortfall. Healing matches daily recalibration within 0.02.

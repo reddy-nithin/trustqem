@@ -1,0 +1,44 @@
+{
+  "assumptions": {
+    "rep_delay_seconds": 0.00025,
+    "readout_seconds": 1.56e-06,
+    "sub_job_overhead_seconds": 2.0,
+    "circuit_duration_seconds_by_scale": {
+      "1.0": {
+        "mean": 1.6964399999999994e-06,
+        "max": 3.5200000000000006e-06
+      },
+      "3.0": {
+        "mean": 5.089320000000005e-06,
+        "max": 1.056000000000001e-05
+      },
+      "5.0": {
+        "mean": 8.482200000000007e-06,
+        "max": 1.7599999999999967e-05
+      }
+    },
+    "formula": "jobs x overhead + shots x (rep_delay + mean circuit duration + readout)",
+    "source": "IBM Quantum docs, 'Estimate job run time' (quantum.cloud.ibm.com/docs)"
+  },
+  "stage4_day_test_plus_twins": {
+    "test_circuits": 40,
+    "twin_circuits": 40,
+    "circuits": 80,
+    "fold_scales": 3,
+    "circuit_executions": 240,
+    "shots_per_execution": 1000,
+    "total_shots": 240000,
+    "estimated_qpu_seconds": 63.6
+  },
+  "monday_training_on_hardware": {
+    "circuits": 400,
+    "fold_scales": 3,
+    "circuit_executions": 1200,
+    "shots_per_execution": 1000,
+    "total_shots": 1200000,
+    "estimated_qpu_seconds": 310.0
+  },
+  "open_plan_limits_seconds": {
+    "per_28_days": 600
+  }
+}
