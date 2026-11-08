@@ -20,6 +20,7 @@ from qiskit_aer.noise import NoiseModel, QuantumError, ReadoutError, depolarizin
 from qiskit_aer.noise.passes import RelaxationNoisePass
 
 from trustqem.config import ExperimentConfig
+from trustqem.simulate import aer_device_options
 
 NATIVE_GATES = ("cz", "rz", "sx", "x")     # IBM Heron basis (rz is virtual: a frame change, no error, no time)
 CHAIN_LENGTH = 4
@@ -84,12 +85,13 @@ def choose_chain(backend, length: int = CHAIN_LENGTH) -> tuple[int, ...]:
     return best
 
 
-def load_calibration(backend=None, physical_qubits: tuple[int, ...] | None = None) -> DeviceCalibration:
+def load_calibration(backend=None, physical_qubits: tuple[int, ...] | None = None,
+                     length: int = CHAIN_LENGTH) -> DeviceCalibration:
     """Read one chain's calibration from a fake backend snapshot (FakeFez by default)."""
     if backend is None:
         from qiskit_ibm_runtime.fake_provider import FakeFez
         backend = FakeFez()
-    chain = tuple(physical_qubits) if physical_qubits is not None else choose_chain(backend)
+    chain = tuple(physical_qubits) if physical_qubits is not None else choose_chain(backend, length)
     target, properties = backend.target, backend.properties()
     edges = list(pairwise(chain))
 
@@ -235,7 +237,8 @@ class DeviceCondition:
 
     def build_simulators(self, config: ExperimentConfig) -> dict[float, AerSimulator]:
         """One density-matrix simulator, shared by every fold scale."""
-        simulator = AerSimulator(method="density_matrix", noise_model=build_device_noise_model(self.calibration))
+        simulator = AerSimulator(method="density_matrix", noise_model=build_device_noise_model(self.calibration),
+                                 **aer_device_options())
         return {scale: simulator for scale in config.noise_scale_factors}
 
     def prepare_circuit(self, circuit: QuantumCircuit, scale: float) -> QuantumCircuit:

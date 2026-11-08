@@ -1,0 +1,38 @@
+[
+  {
+    "session": "S1",
+    "alarm_rate": 1.0,
+    "first_alarm_rate": 1.0,
+    "median_martingale": 2904058897847110.0,
+    "never": {
+      "coverage": 0.6666666666666666,
+      "mean_width": 0.08686594563885615
+    },
+    "daily": {
+      "coverage": 0.9023809523809524,
+      "mean_width": 0.1566699867664323
+    },
+    "healing": {
+      "coverage": 0.9023809523809523,
+      "mean_width": 0.1566699867664323
+    }
+  },
+  {
+    "session": "S2",
+    "alarm_rate": 0.0,
+    "first_alarm_rate": 0.0,
+    "median_martingale": 0.0772103065550034,
+    "never": {
+      "coverage": 0.6476190476190476,
+      "mean_width": 0.08692498813502186
+    },
+    "daily": {
+      "coverage": 0.9047619047619048,
+      "mean_width": 0.1656336889352419
+    },
+    "healing": {
+      "coverage": 0.8904761904761906,
+      "mean_width": 0.15814360618822154
+    }
+  }
+]

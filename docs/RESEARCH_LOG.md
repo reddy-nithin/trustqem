@@ -277,3 +277,141 @@ against R1's 0.165). So the hardware evidence supports Clifford recalibration in
 the weighted version. With 60 test circuits per session the CIs are about ±5 points, so this is evidence, not proof.
 Outputs: `results/hardware/verdict.md`, `results/hardware/S{1,2}/summary.json`,
 `results/hardware/coverage_by_session.png`.
+
+## 2026-11-06: Amendment 4 setup, reproducibility check, self-healing results
+
+**Moving to the lab server.** Simulations for Amendment 4 run on the UMKC lab server (Ubuntu, Xeon Silver 4210R,
+4x RTX A4000) in tmux, each from a frozen git worktree of one commit. Speed at 12 qubits: 17.4 s per simulation on
+one CPU core, 0.62 s on one GPU, about 2.7 per second with four jobs sharing one GPU, about 10 per second on all four
+GPUs. GPU single precision was slower (1.0 s) and is not used.
+
+**Does the parallel code change anything?** No. The first 40 Monday circuits of the `full` profile and their
+measured probabilities are bit-identical between the Mac (one worker) and the server (24 workers). The full 4-qubit
+`full` run on the server does not reproduce the committed Mac numbers byte for byte (e.g. ZNE bootstrap coverage
+0.831 vs 0.833, D0 frozen 0.891 vs 0.887). Running the original code (commit c2fe941) on the server with the same
+pools gives a summary identical to the new code, so the gap comes from the platform (floating point in model
+training on Linux vs macOS), not from the changes. No verdict changes. Committed results stay the Mac originals.
+
+**H6, self-healing loop, 4 qubits** (`results/healing/scale_q4/`, profile `scale_q4` pools, 200 ten-day sequences
+per scenario, 30 canaries and 30 test circuits per day, k = 4, alarm at 20). H6a passes: no false alarm on any quiet
+day in any scenario. H6b fails as written: after a correct alarm, coverage is 0.902 to 0.913 in five scenarios but
+0.938 under D5 readout drift, more than 3 points above 0.90 (over-coverage). Detection: 99 to 100% within 1.0 to
+3.1 days for D2 to D6; D1 (depolarizing x1.5) is caught in 63% of sequences after 3.9 days on average. On day 10
+the healed intervals cover 0.85 to 0.94 against 0.42 to 0.79 for never recalibrating.
+
+**Self-healing replayed on hardware** (`results/healing/hardware/`, 200 canary orders). S1: the alarm fires in all
+200 (median martingale about 3e15) and healing lifts coverage from 0.667 to 0.902. S2, three days later: no alarm in
+any order (median 0.08); S1's recalibration still covers 0.890, against 0.905 for recalibrating on S2's own twins.
+
+**Scale of the alarm, 156 qubits** (`results/canary_scale/q156/`, reported, not judged). Pure Clifford canaries on a
+simulated 156-qubit chip (stabilizer method, depolarizing 0.001 / 0.01 plus 1% readout flips; drift = gate errors
+x1.5), 311 Z and ZZ observables, 1,000 shots, 5.7 s per canary on one server core. Raw canary error 0.0294 before
+and 0.0316 after the drift. With 60 reference canaries and 30 per day, the alarm never fired on quiet days in 200
+sequences and caught the drift in all 200, after 2.6 days on average. Caveat: days are resampled from pools of 150
+canaries per condition, so sequences share circuits. This shows the alarm runs at chip size; it says nothing about
+coverage at 156 qubits.
+
+**H5 scaling, 4 to 12 qubits (pre-registered in Amendment 4): FAILS from 6 qubits on.** `scripts/scaling_table.py`
+reads `results/drift/scale_q{n}/summary.json` and checks R1W (k = 2 and 4, K = 100) against 0.90 ± 0.03 and width
+under 2x oracle. At 4 qubits every scenario passes except D5 readout, which over-covers (0.93). At 6, 8 and 12 qubits,
+R1W still passes D0 and D5 but under-covers the gate-noise drifts, with intervals narrower than the oracle's:
+
+| scenario | frozen, 12 q | R1W k=4, 12 q | width / oracle |
+|---|---|---|---|
+| D1 depolarizing x1.5 | 0.805 | 0.832 | 0.81 |
+| D2 depolarizing x2 | 0.725 | 0.806 | 0.74 |
+| D3 bad qubit | 0.789 | 0.816 | 0.72 |
+| D4 thermal relaxation | 0.699 | 0.867 | 0.93 |
+| D6 combined | 0.590 | 0.830 | 0.79 |
+
+R1W closes about a third to two thirds of the gap, not all of it. The 10-qubit run is still going.
+
+Signal check (reported): the share of rows with |ideal| > 0.1 is 0.71, 0.62, 0.58 and 0.52 at 4, 6, 8 and 12 qubits,
+well above the 20% flag. The signal is fine.
+
+Likely cause (diagnostic, after looking): with k fixed at 2 or 4, the twins get more Clifford as circuits grow. At 12
+qubits only 14% (k = 2) and 16% (k = 4) of twin observables have |ideal| > 0.1, against 52% of the real circuits; at 4
+qubits k = 4 gave 32% against 71%. A Clifford observable with ideal value 0 stays at 0 under depolarizing noise, so
+most twin rows carry no information about gate-noise drift. That matches the pattern: the drifts that move zeros
+(readout, thermal relaxation) are repaired; the ones that only shrink nonzero values are not.
+
+**Amendment 5, fix 1 (R1N, exploratory): FAILS the other way.** `results/nonzero/` reruns the drift study on the
+cached pools with R1N added. Every other method reproduces the Amendment 4 summaries exactly at all five sizes
+(checked entry by entry). R1N over-corrects: at n = 12, k = 4, coverage is 0.96 to 0.99 in every scenario, with
+widths 1.8 to 5.6x the oracle's (D0 2.1x, D2 3.8x, D6 4.4x). It fails the width rule everywhere except D0 at 4 qubits.
+Reading: the nonzero twin rows have larger residuals than typical test rows, many of which have ideal values near 0,
+so dropping the zeros swaps "twins too easy" for "twins too hard". The weighting cannot undo a shift this large.
+Fix 1 is dropped; fix 2 (k = 16 twins, Amendment 5) is next, which changes the twins themselves.
+
+**Amendment 5, fix 2 (k = 16 twins at 12 qubits, exploratory): FAILS.** `results/twins_k16/scale_q12/` adds k = 16
+twins to the 12-qubit pools (fresh Monday twin sources, Tuesday twins paired with the same test circuits) and reruns
+the analysis. At K = 100, R1W with k = 16 gains 1 to 3 points over k = 4 under gate-noise drift but still misses the
+band, with widths below the oracle's:
+
+| scenario | frozen | R1W k=4 | R1W k=16 | width / oracle, k=16 |
+|---|---|---|---|---|
+| D1 depolarizing x1.5 | 0.809 | 0.830 | 0.849 | 0.84 |
+| D2 depolarizing x2 | 0.729 | 0.798 | 0.836 | 0.81 |
+| D3 bad qubit | 0.786 | 0.830 | 0.833 | 0.78 |
+| D4 thermal relaxation | 0.699 | 0.866 | 0.870 | 0.93 |
+| D6 combined | 0.588 | 0.836 | 0.848 | 0.85 |
+
+D0, D4 and D5 pass; D1, D2, D3 and D6 fail, the same set as k = 4. (The k = 2 and 4 numbers here differ from the
+Amendment 4 run by up to 0.01 because this analysis draws its own repeats.) Reading: richer twins help a little, so the
+mostly-zero diagnosis is part of the story but not all of it. Gate-noise drift on 144-rotation circuits is not fully
+seen by circuits with 16 rotations. Coverage at 6 to 12 qubits under gate-noise drift stays an open problem.
+
+**Device track at 12 qubits (Amendment 2 rules, FakeFez-derived noise): repair works.** `results/device/scale_q12/`.
+The device-style drifts are milder at 12 qubits (frozen loses 4 to 7 points, so H2 counts 0 of 5). R1W k = 4 at K = 100
+gives 0.896, 0.885, 0.930, 0.881 and 0.900 for E1 to E5 against an oracle of 0.89, with widths within 1.2x the oracle's.
+E3 readout over-covers at the edge of the band, as at 4 qubits.
+
+**H6 self-healing at 8 and 12 qubits: H6a passes, H6b fails** (`results/healing/scale_q{8,12}/`). False alarms 0 to
+0.5% on quiet days. Detection: D2, D4, D5, D6 caught in 98 to 100% of sequences after 1 to 3 days; D3 in 67% (12 q) and
+97% (8 q); mild D1 in about 23%. After an alarm, coverage at 12 q is 0.82 to 0.92 (never-fix 0.60 to 0.82), so healing
+recovers what R1W can recover and inherits its H5 shortfall. Healing matches daily recalibration within 0.02.
+
+**S3 decision (2026-11-07): run the 12-qubit hardware session despite the H5 gate.** Amendment 4 said S3 runs only if
+H5 is not clearly failing at n = 12. It is failing under gate-noise drift (D1, D2, D3, D6). Nithin decided to run S3
+anyway, because the 12-qubit device track (FakeFez-derived noise, the closest simulation to hardware) passed, so the
+hardware question is still open. Before anything went to IBM, a full FakeFez dry run of the 12-qubit path passed every
+check: 12 connected qubits, 540 circuits each measuring 12 bits, 1,000 shots, and noisy against ideal correlation 0.995
+(test) and 0.996 (oracle), with the signal falling with fold scale (0.96, 0.92, 0.89). The real session was then
+prepared on today's calibration: chain (104, 105, 117, 125, 124, 123, 136, 143, 144, 145, 146, 147), estimate 140 s.
+Its folder is `results/q12/hardware/S3/`, separate from S1 and S2, so S3 gets its own Monday from its own calibration.
+
+## 2026-11-08: Stage 4 hardware session 3 (12 qubits) and verdict
+
+Session 3: ibm_fez, 12-qubit chain (104, 105, 117, 125, 124, 123, 136, 143, 144, 145, 146, 147), job
+dbnm1a8ou4as73b4q9ag, 540 executions at 1000 shots. Submitted Nov 7 17:32 UTC, ran Nov 8 08:13 to 08:17 UTC after
+about 15 hours in the queue. 145 s charged against a 140.4 s estimate (435 s of 600 used across all three sessions).
+Before analysis the counts passed every data check: 540 count sets of 12-bit keys at 1000 shots, every circuit on the
+chain, noisy against ideal correlation 0.991 (test) and 0.993 (oracle), signal falling with fold scale. Folding on
+hardware: attenuation 0.935, 0.894, 0.838 at scales 1, 3, 5, linearity 2.45 (simulator 0.952, 0.915, 0.883,
+linearity 1.86). The analysis ran on the UMKC GPUs in tmux; Monday is simulated from S3's own calibration.
+
+**Result (S3, 60 test circuits, 1380 rows, 95% circuit-bootstrap CIs).**
+
+| method | coverage | mean width |
+|---|---|---|
+| R0 frozen | 0.675 (0.644 to 0.707) | 0.085 |
+| ZNE + bootstrap | 0.789 (0.760 to 0.819) | 0.117 |
+| R1 K = 60 | 0.890 (0.847 to 0.928) | 0.161 |
+| R2 K = 60 | 0.926 (0.888 to 0.953) | 0.191 |
+| R1W K = 60 | 0.886 (0.820 to 0.930) | 0.155 |
+| R3 oracle K = 60 | 0.886 (0.854 to 0.921) | 0.159 |
+| R1W K = 25 | 0.884 (0.800 to 0.940) | 0.156 |
+
+**Verdict (Amendment 3 rule, Amendment 4 S3 plan).** H2-hw holds (frozen 0.675, below 0.87). H3-hw passes at 12
+qubits: R1W at K = 60 covers 0.886, within 3 points of 0.90, its 95% CI contains 0.90, and its width is 0.98x the
+oracle's. R1W matches the oracle's coverage exactly (0.886 both). Test MAE 0.037. The drift alarm fires (p = 1.9e-25).
+
+**Hardware self-healing replay at 12 qubits (reported).** Simulated Monday, then S3, 200 canary orders: the alarm
+fires in 200 of 200 (median martingale 2.1e21), and healing restores coverage from 0.675 (never fix) to 0.886, the
+same as daily recalibration. Outputs: `results/q12/hardware/verdict.md`, `results/q12/hardware/S3/summary.json`,
+`results/q12/healing/hardware/`.
+
+**Reading.** On the real chip, the 12-qubit repair works, while simulated gate-noise drift at 12 qubits (H5) does not
+fully recover. This agrees with the 12-qubit device track (FakeFez-derived noise), which also passed. The likely
+reason is that real drift between a simulated Monday and the chip is not pure depolarizing-gate drift. One session
+with 60 test circuits is evidence, not proof (CIs about ±5 points), and nothing is claimed beyond 12 qubits.

@@ -1,0 +1,19 @@
+{
+  "qubits": 156,
+  "observables": 311,
+  "shots": 1000,
+  "seconds_per_canary": 5.705730581548479,
+  "mean_score_quiet": 0.029369603429796363,
+  "mean_score_drifted": 0.031566988210075024,
+  "sequences": 200,
+  "false_alarm_rate_quiet_days": 0.0,
+  "detection_rate": 1.0,
+  "mean_delay_days": 2.61,
+  "delay_counts": {
+    "1": 7,
+    "2": 95,
+    "3": 71,
+    "4": 23,
+    "5": 4
+  }
+}

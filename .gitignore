@@ -12,3 +12,8 @@ CLAUDE.md
 AGENTS.md
 .claude/
 results/hardware/dryrun/
+
+# simulation caches (large; server keeps them on lab storage)
+pools.pkl
+pool_parts/
+logs/

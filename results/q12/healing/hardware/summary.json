@@ -1,0 +1,20 @@
+[
+  {
+    "session": "S3",
+    "alarm_rate": 1.0,
+    "first_alarm_rate": 1.0,
+    "median_martingale": 2.1104314060805387e+21,
+    "never": {
+      "coverage": 0.6746376811594202,
+      "mean_width": 0.08473927746398412
+    },
+    "daily": {
+      "coverage": 0.8855072463768116,
+      "mean_width": 0.1551864291692556
+    },
+    "healing": {
+      "coverage": 0.8855072463768116,
+      "mean_width": 0.15518642916925557
+    }
+  }
+]

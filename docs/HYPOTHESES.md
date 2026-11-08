@@ -194,3 +194,76 @@ touch `results/hardware/`. Session 2's circuits, qubits, settings, methods and p
 whatever the interim shows. If it reveals a defect in how jobs are built or read, the fix and its reason will be
 recorded as a new amendment before session 2 runs; if the method itself does poorly, nothing is changed for this
 study.
+
+### Amendment 4 (2026-11-06, scale-up and self-healing loop, before any run with more than 4 qubits)
+
+**Why.** Every result so far is at 4 qubits. This amendment asks whether the method keeps working as the system
+grows, and adds an automatic trigger for recalibration. Nothing above changes: H1 to H4 and Amendments 1 to 3 keep
+their verdicts. Simulations run on the UMKC lab server (CPU, with the GPU only if a speed test shows it is faster
+and gives the same numbers to 1e-5).
+
+**Scaling study.** Qubit counts n = 4, 6, 8, 10 and 12. Same random-circuit family (12 layers, CX probability 0.5
+per neighbouring pair), same observables (Z on each qubit, ZZ on each neighbouring pair), same drift scenarios D0 to
+D6 and the same R1W method frozen in Amendment 1. Sizes per n: Monday 1,000 circuits (600 train, 200 calibration,
+200 test per repeat), 400 twin sources, 800 Tuesday circuits per scenario, 20 repeats, K in {10, 25, 50, 100, 200}.
+Twins with k in {2, 4}; at n = 4, k = 0 and k = 8 are also run for continuity with Stage 2. Seed 5050 + n. The
+seeds 42, 2026 and 3030 are not reused.
+
+- **H5 (scaling).** At every n, R1W with k in {2, 4} at K = 100 reaches test coverage within 3 points of 0.90 under
+  every scenario D0 to D6, with mean width under 2x the oracle's at the same K. H2 (frozen intervals lose 10 or more
+  points under at least 2 scenarios) is checked again at each n.
+- **Signal check (reported, not judged).** The share of test rows with |ideal value| > 0.1 at each n. Random
+  circuits on more qubits push ideal values towards 0, and near-zero targets are easy to cover. If the share falls
+  below 20% at n = 12, the report says so next to the coverage numbers. Depth is not tuned after looking.
+- **Device track at 12 qubits.** The Stage 3 device study (Amendment 2, FakeFez calibration, gate folding at 1, 3
+  and 5) is repeated at n = 12 with the same sizes as above, run if the server has time before 2026-11-08 noon. It is
+  reported as complete or not run, never partially.
+
+**Self-healing loop.** Each session runs a small set of near-Clifford canary circuits (k = 4, 30 per day) along with
+the real work. Their residual scores under the frozen model are turned into conformal p-values against a reference
+set (at the start, the Monday twins). The p-values feed a simple-mixture power martingale (Vovk, Gammerman and
+Shafer, "Algorithmic Learning in a Random World"). When the martingale reaches 20, the loop raises an alarm,
+recalibrates with R1W on that day's canaries, makes those canaries the new reference and restarts the martingale.
+By Ville's inequality, with no drift the chance that the alarm ever fires is at most 1/20.
+
+- **H6 (self-healing).** In simulation, 10-day sequences (days 1 to 5 under D0, days 6 to 10 under one drift
+  scenario), 200 sequences per scenario, resampled from the Tuesday pools: (a) false alarms during the D0 days in at
+  most 5% of sequences; (b) on days after a correct alarm, R1W coverage within 3 points of 0.90. Detection rate and
+  delay in days are reported per scenario, not judged (H4 already showed mild drift is hard to detect). Compared
+  against "never recalibrate" and "recalibrate every day".
+- **Hardware replay (reported).** The loop is replayed on the hardware data: simulated Monday, then S1, S2 and S3 if
+  it runs.
+- **Scale of the alarm (reported).** Pure Clifford canaries (k = 0) on a simulated 156-qubit chip (stabilizer
+  simulation, Pauli noise, a drift step). The monitored score is the raw canary error |noisy value - ideal value|,
+  since no mitigator can be trained at that size. Reported: alarm delay and run time. This shows that the alarm
+  step scales; it is not a coverage result.
+
+**Hardware session S3 (12 qubits).** One session on ibm_fez with the Amendment 3 design moved to a 12-qubit chain:
+60 test, 60 oracle and 60 k = 8 twin circuits, folds 1, 3 and 5, 1,000 shots, chain chosen by the same rule. The
+Monday model is simulated from S3's own calibration. H3-hw is judged by the Amendment 3 rule. About 310 s of the
+Open Plan's 600 s remain, so S3 is not re-run if it fails; the 4-qubit hardware result then stands alone. S3 runs
+only if the 12-qubit simulation is complete and H5 is not clearly failing at n = 12; either way the decision and
+reason are logged.
+
+**What will not be claimed.** Coverage beyond 12 qubits. The report says the recalibration and alarm use only
+classically checkable Clifford circuits, so their cost does not grow with chip size, and that coverage at 100+
+qubits is untested.
+
+## Amendment 5 (2026-11-06, written after seeing the H5 failure; everything here is exploratory)
+
+H5 failed from 6 qubits on (RESEARCH_LOG, 2026-11-06). The diagnosis was made after looking: with k fixed, twin
+observables are mostly exactly 0 at larger n (16% with |ideal| > 0.1 at n = 12, k = 4, against 52% for real
+circuits), and a zero stays at zero under depolarizing noise. Two fixes are tried. Both are labeled exploratory in
+every report, and the H5 failure is reported next to them unchanged.
+
+**Fix 1, R1N (nonzero twins).** Same as R1W, but the twin calibration rows are only those whose twin ideal value
+(computed classically) has |ideal| > 0.1. The weighting classifier and the test rows are unchanged. If fewer than 20
+twin rows remain at some K, R1N is not reported at that K. Rerun on the existing pools (same seeds, same splits, so
+R1W must reproduce the Amendment 4 numbers exactly), at n = 4, 6, 8, 10 and 12. Judged by the H5 rule: k in {2, 4},
+K = 100, coverage within 3 points of 0.90 and width under 2x oracle, every scenario. Output in `results/nonzero/`.
+
+**Fix 2, k grows with n.** k is chosen before any coverage is seen, by one rule: the twin-to-real ratio of the share
+of observables with |ideal| > 0.1 should match the 4-qubit k = 4 value (0.33 / 0.73 = 0.45), measured on noiseless
+circuits. At n = 12 this gives k = 16 (twin share 0.27 against 0.53). New twin pools at that k only; the other pools
+are reused. Judged by the same H5 rule with R1W. The cost is stated in every report: the classical cost of a twin's
+ideal value grows roughly as 2^k, so with this fix the recalibration cost does grow with circuit size.

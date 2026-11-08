@@ -5,11 +5,12 @@ import logging
 from pathlib import Path
 
 from trustqem import hardware
-from trustqem.experiments import device, drift
+from trustqem.experiments import canary_scale, device, drift, healing, nonzero, twins_k
 from trustqem.experiments import hardware as hardware_experiment
+from trustqem.experiments import healing_hardware
 
-EXPERIMENTS = {"device": device, "drift": drift}
-HARDWARE_STEPS = ("check", "prepare", "submit", "fetch", "analyze")
+EXPERIMENTS = {"canary_scale": canary_scale, "device": device, "drift": drift, "healing": healing, "nonzero": nonzero, "twins_k16": twins_k}
+HARDWARE_STEPS = ("check", "prepare", "submit", "fetch", "analyze", "heal")
 
 
 def main() -> None:
@@ -26,6 +27,7 @@ def main() -> None:
     hardware_parser.add_argument("--pair-with", help="reuse this session's chain and circuits (e.g. S1)")
     hardware_parser.add_argument("--backend", default="ibm_fez")
     hardware_parser.add_argument("--dry-run", action="store_true", help="use local FakeFez instead of the device")
+    hardware_parser.add_argument("--qubits", type=int, default=4, help="chain length for a new session (prepare)")
     hardware_parser.add_argument("--force", action="store_true", help="submit even above the QPU budget cap")
     hardware_parser.add_argument("--results", type=Path, default=Path("results"))
     arguments = parser.parse_args()
@@ -48,7 +50,9 @@ def run_hardware_step(arguments: argparse.Namespace) -> None:
         print("\n".join(hardware.check_access(arguments.backend, arguments.dry_run)))
     elif arguments.step == "prepare":
         pair = root / arguments.pair_with if arguments.pair_with else None
-        spec = hardware.prepare_session(session_dir, arguments.session, arguments.backend, arguments.dry_run, pair)
+        sizes = {} if pair or arguments.qubits == 4 else {"qubit_count": arguments.qubits}
+        spec = hardware.prepare_session(session_dir, arguments.session, arguments.backend, arguments.dry_run, pair,
+                                        **sizes)
         print(f"prepared {spec.session} on {spec.backend_name}, qubits {spec.physical_qubits}: {session_dir}")
     elif arguments.step == "submit":
         job_id = hardware.submit_session(session_dir, force=arguments.force)
@@ -56,6 +60,9 @@ def run_hardware_step(arguments: argparse.Namespace) -> None:
               f"job {job_id} submitted; run `fetch` when it has finished")
     elif arguments.step == "fetch":
         print(f"counts saved to {hardware.fetch_session(session_dir)}")
+    elif arguments.step == "heal":
+        output = healing_hardware.run(root, arguments.results / "healing" / root.name)
+        print((output / "verdict.md").read_text())
     else:
         output = hardware_experiment.run(root)
         print((output / "verdict.md").read_text())

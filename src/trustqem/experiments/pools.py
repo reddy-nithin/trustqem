@@ -1,9 +1,10 @@
 """Build and cache the simulated circuit pools an experiment needs (Monday, Monday twins, Tuesday per scenario)."""
 
 import logging
+import os
 import pickle
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
@@ -54,8 +55,15 @@ def _twins(records: list[CircuitRecord], keep: int, rng: np.random.Generator) ->
     return [build_clifford_twin(record, keep, rng) for record in records]
 
 
+def _skip_pool(rng: np.random.Generator, circuit_count: int, scale_count: int) -> None:
+    """Advance the generator exactly as simulate_pool would (one seed per circuit and scale), without simulating."""
+    for _ in range(circuit_count * scale_count):
+        rng.integers(0, 2**31)
+
+
 def build_pools(config: ExperimentConfig, sizes: PoolSizes, monday_condition: NoiseCondition = MONDAY,
-                scenarios: Mapping[str, NoiseCondition] = DRIFT_SCENARIOS) -> ExperimentPools:
+                scenarios: Mapping[str, NoiseCondition] = DRIFT_SCENARIOS,
+                parts_dir: Path | None = None) -> ExperimentPools:
     """Simulate every pool. The same Tuesday circuits are used in every scenario, so scenarios are paired.
 
     Any condition with `build_simulators` and `prepare_circuit` works (noise.NoiseCondition, device.DeviceCondition).
@@ -66,8 +74,24 @@ def build_pools(config: ExperimentConfig, sizes: PoolSizes, monday_condition: No
     sign_table = build_sign_table(labels, config.qubit_count)
 
     def run(records: list[CircuitRecord], condition: NoiseCondition, tag: str) -> SimulatedPool:
-        return simulate_pool(records, tag, condition.build_simulators(config), config, observables, labels,
+        key = repr((config, sizes, condition, tag, len(records)))
+        part = parts_dir / f"{tag}.pkl" if parts_dir is not None else None
+        if part is not None and part.exists():
+            with open(part, "rb") as file:
+                saved_key, saved_pool = pickle.load(file)
+            if saved_key == key:
+                _skip_pool(rng, len(records), len(config.noise_scale_factors))
+                logger.info("pool %s: loaded finished part %s", tag, part)
+                return saved_pool
+        pool = simulate_pool(records, tag, condition.build_simulators(config), config, observables, labels,
                              sign_table, rng, prepare=condition.prepare_circuit)
+        if part is not None:
+            part.parent.mkdir(parents=True, exist_ok=True)
+            temporary = part.with_suffix(".tmp")
+            with open(temporary, "wb") as file:
+                pickle.dump((key, pool), file)
+            temporary.replace(part)       # atomic, so a crash mid-write never leaves a broken part
+        return pool
 
     def random_records(count: int) -> list[CircuitRecord]:
         return build_random_records(count, config.qubit_count, config.max_layers, config.cx_probability_per_pair,
@@ -90,10 +114,18 @@ def build_pools(config: ExperimentConfig, sizes: PoolSizes, monday_condition: No
                            _conditions(monday_condition, scenarios, sizes))
 
 
+def _parts_dir(cache_path: Path) -> Path:
+    """Where finished pools are saved one by one, so an interrupted run resumes."""
+    return cache_path.parent / "pool_parts"
+
+
 def load_or_build_pools(config: ExperimentConfig, sizes: PoolSizes, cache_path: Path,
                         monday_condition: NoiseCondition = MONDAY,
                         scenarios: Mapping[str, NoiseCondition] = DRIFT_SCENARIOS) -> ExperimentPools:
     """Reuse cached pools if they were built with the same settings, otherwise simulate and cache."""
+    root = os.environ.get("TRUSTQEM_CACHE")
+    if root:        # big caches live outside the repo (server: lab storage)
+        cache_path = Path(root) / f"{cache_path.parent.parent.name}_{cache_path.parent.name}" / cache_path.name
     if cache_path.exists():
         with open(cache_path, "rb") as cache_file:
             cached: ExperimentPools = pickle.load(cache_file)
@@ -102,8 +134,53 @@ def load_or_build_pools(config: ExperimentConfig, sizes: PoolSizes, cache_path: 
             logger.info("loaded cached pools from %s", cache_path)
             return cached
         logger.info("cache settings differ, rebuilding pools")
-    pools = build_pools(config, sizes, monday_condition, scenarios)
+    pools = build_pools(config, sizes, monday_condition, scenarios, parts_dir=_parts_dir(cache_path))
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     with open(cache_path, "wb") as cache_file:
         pickle.dump(pools, cache_file)
     return pools
+
+
+def add_twin_pools(pools: ExperimentPools, keep: int, seed: int, parts_dir: Path,
+                   monday_condition: NoiseCondition = MONDAY,
+                   scenarios: Mapping[str, NoiseCondition] = DRIFT_SCENARIOS) -> ExperimentPools:
+    """Amendment 5, fix 2: add twins with `keep` non-Clifford rotations to finished pools, leaving the rest as is.
+
+    Tuesday twins copy the stored Tuesday circuits, so they stay paired with the test circuits. The Monday twin
+    sources are not stored, so fresh ones are drawn from the same circuit distribution. Everything new comes from
+    its own generator (`seed`), and finished pools are saved one by one under `parts_dir` so a crash resumes.
+    """
+    config, sizes = pools.config, pools.sizes
+    rng = np.random.default_rng(seed)
+    labels = build_observable_labels(config.qubit_count)
+    observables = [SparsePauliOp(label) for label in labels]
+
+    def run(records: list[CircuitRecord], condition: NoiseCondition, tag: str) -> SimulatedPool:
+        key, part = repr((config, keep, seed, condition, tag, len(records))), parts_dir / f"{tag}.pkl"
+        if part.exists():
+            with open(part, "rb") as file:
+                saved_key, saved_pool = pickle.load(file)
+            if saved_key == key:
+                _skip_pool(rng, len(records), len(config.noise_scale_factors))
+                logger.info("pool %s: loaded finished part %s", tag, part)
+                return saved_pool
+        pool = simulate_pool(records, tag, condition.build_simulators(config), config, observables, labels,
+                             pools.sign_table, rng, prepare=condition.prepare_circuit)
+        part.parent.mkdir(parents=True, exist_ok=True)
+        temporary = part.with_suffix(".tmp")
+        with open(temporary, "wb") as file:
+            pickle.dump((key, pool), file)
+        temporary.replace(part)
+        return pool
+
+    sources = build_random_records(sizes.monday_twin_sources, config.qubit_count, config.max_layers,
+                                   config.cx_probability_per_pair, rng)
+    monday_twins = {**pools.monday_twins,
+                    keep: run(_twins(sources, keep, rng), monday_condition, f"monday_twins_k{keep}")}
+    tuesday_records = pools.tuesday[sizes.scenarios[0]].records
+    twin_records = _twins(tuesday_records, keep, rng)
+    tuesday_twins = dict(pools.tuesday_twins)
+    for scenario in sizes.scenarios:
+        tuesday_twins[(scenario, keep)] = run(twin_records, scenarios[scenario], f"tuesday_{scenario}_twins_k{keep}")
+    new_sizes = replace(sizes, twin_non_clifford_counts=(*sizes.twin_non_clifford_counts, keep))
+    return replace(pools, sizes=new_sizes, monday_twins=monday_twins, tuesday_twins=tuesday_twins)

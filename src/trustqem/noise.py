@@ -13,6 +13,7 @@ from qiskit_aer.noise import NoiseModel, ReadoutError, depolarizing_error, therm
 
 from trustqem.circuits import ONE_QUBIT_GATE_NAMES, TWO_QUBIT_GATE_NAMES
 from trustqem.config import ExperimentConfig
+from trustqem.simulate import aer_device_options
 
 # Thermal relaxation parameters for the drift scenarios, in microseconds. These are pessimistic (older-generation
 # hardware, or a bad day) so the effect is visible next to 3% two-qubit depolarizing noise.
@@ -60,7 +61,8 @@ class NoiseCondition:
 
     def build_simulators(self, config: ExperimentConfig) -> dict[float, AerSimulator]:
         """One density-matrix simulator per ZNE scale factor."""
-        return {scale: AerSimulator(method="density_matrix", noise_model=self.build_noise_model(scale, config))
+        return {scale: AerSimulator(method="density_matrix", noise_model=self.build_noise_model(scale, config),
+                                     **aer_device_options())
                 for scale in config.noise_scale_factors}
 
     def prepare_circuit(self, circuit: QuantumCircuit, scale: float) -> QuantumCircuit:
