@@ -133,10 +133,11 @@ def c3_healing_timeline() -> None:
 
 
 def c4_hardware_replay() -> None:
-    """The loop replayed on ibm_fez: alarm on session 1, quiet on session 2, repair still holding."""
-    summary = load("results/healing/hardware/summary.json")
-    names = [{"S1": "Session 1", "S2": "Session 2\n(3 days later)"}.get(s["session"], s["session"]) for s in summary]
-    fig, (top, bottom) = plt.subplots(1, 2, figsize=(12, 5))
+    """The loop replayed on ibm_fez: alarm on S1, quiet on S2 with the repair holding; S3 (12 q) is its own replay."""
+    summary = load("results/healing/hardware/summary.json") + load("results/q12/healing/hardware/summary.json")
+    labels = {"S1": "Session 1\n4 qubits", "S2": "Session 2\n3 days later", "S3": "Session 3\n12 qubits*"}
+    names = [labels.get(s["session"], s["session"]) for s in summary]
+    fig, (top, bottom) = plt.subplots(1, 2, figsize=(14, 5.5))
     top.bar(names, [s["median_martingale"] for s in summary], color=ALARM, width=0.5)
     top.set_yscale("log")
     top.axhline(20, color="black", ls="--", lw=1.5)
@@ -155,8 +156,11 @@ def c4_hardware_replay() -> None:
     bottom.set_ylabel("coverage")
     bottom.set_title("Error bars", pad=34)
     bottom.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=2, frameon=False, fontsize=13)
-    fig.suptitle("Self-healing on the real IBM chip, 3 days apart", y=1.1)
-    save(fig, "C4_hardware_healing_replay", ["results/healing/hardware/summary.json"])
+    fig.suptitle("Self-healing on the real IBM chip", y=1.1)
+    note = "* Session 3 is a separate replay: simulated Monday, then session 3."
+    fig.text(0.5, -0.08, note, ha="center", fontsize=12)
+    save(fig, "C4_hardware_healing_replay",
+         ["results/healing/hardware/summary.json", "results/q12/healing/hardware/summary.json"])
 
 
 def c5_alarm_156() -> None:
