@@ -379,3 +379,39 @@ check: 12 connected qubits, 540 circuits each measuring 12 bits, 1,000 shots, an
 (test) and 0.996 (oracle), with the signal falling with fold scale (0.96, 0.92, 0.89). The real session was then
 prepared on today's calibration: chain (104, 105, 117, 125, 124, 123, 136, 143, 144, 145, 146, 147), estimate 140 s.
 Its folder is `results/q12/hardware/S3/`, separate from S1 and S2, so S3 gets its own Monday from its own calibration.
+
+## 2026-11-08: Stage 4 hardware session 3 (12 qubits) and verdict
+
+Session 3: ibm_fez, 12-qubit chain (104, 105, 117, 125, 124, 123, 136, 143, 144, 145, 146, 147), job
+dbnm1a8ou4as73b4q9ag, 540 executions at 1000 shots. Submitted Nov 7 17:32 UTC, ran Nov 8 08:13 to 08:17 UTC after
+about 15 hours in the queue. 145 s charged against a 140.4 s estimate (435 s of 600 used across all three sessions).
+Before analysis the counts passed every data check: 540 count sets of 12-bit keys at 1000 shots, every circuit on the
+chain, noisy against ideal correlation 0.991 (test) and 0.993 (oracle), signal falling with fold scale. Folding on
+hardware: attenuation 0.935, 0.894, 0.838 at scales 1, 3, 5, linearity 2.45 (simulator 0.952, 0.915, 0.883,
+linearity 1.86). The analysis ran on the UMKC GPUs in tmux; Monday is simulated from S3's own calibration.
+
+**Result (S3, 60 test circuits, 1380 rows, 95% circuit-bootstrap CIs).**
+
+| method | coverage | mean width |
+|---|---|---|
+| R0 frozen | 0.675 (0.644 to 0.707) | 0.085 |
+| ZNE + bootstrap | 0.789 (0.760 to 0.819) | 0.117 |
+| R1 K = 60 | 0.890 (0.847 to 0.928) | 0.161 |
+| R2 K = 60 | 0.926 (0.888 to 0.953) | 0.191 |
+| R1W K = 60 | 0.886 (0.820 to 0.930) | 0.155 |
+| R3 oracle K = 60 | 0.886 (0.854 to 0.921) | 0.159 |
+| R1W K = 25 | 0.884 (0.800 to 0.940) | 0.156 |
+
+**Verdict (Amendment 3 rule, Amendment 4 S3 plan).** H2-hw holds (frozen 0.675, below 0.87). H3-hw passes at 12
+qubits: R1W at K = 60 covers 0.886, within 3 points of 0.90, its 95% CI contains 0.90, and its width is 0.98x the
+oracle's. R1W matches the oracle's coverage exactly (0.886 both). Test MAE 0.037. The drift alarm fires (p = 1.9e-25).
+
+**Hardware self-healing replay at 12 qubits (reported).** Simulated Monday, then S3, 200 canary orders: the alarm
+fires in 200 of 200 (median martingale 2.1e21), and healing restores coverage from 0.675 (never fix) to 0.886, the
+same as daily recalibration. Outputs: `results/q12/hardware/verdict.md`, `results/q12/hardware/S3/summary.json`,
+`results/q12/healing/hardware/`.
+
+**Reading.** On the real chip, the 12-qubit repair works, while simulated gate-noise drift at 12 qubits (H5) does not
+fully recover. This agrees with the 12-qubit device track (FakeFez-derived noise), which also passed. The likely
+reason is that real drift between a simulated Monday and the chip is not pure depolarizing-gate drift. One session
+with 60 test circuits is evidence, not proof (CIs about ±5 points), and nothing is claimed beyond 12 qubits.
