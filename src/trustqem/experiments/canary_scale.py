@@ -75,7 +75,8 @@ def noise_model(multiplier: float) -> NoiseModel:
     model = NoiseModel()
     model.add_all_qubit_quantum_error(depolarizing_error(multiplier * ONE_QUBIT_RATE, 1), list(CLIFFORD_ONE_QUBIT))
     model.add_all_qubit_quantum_error(depolarizing_error(multiplier * TWO_QUBIT_RATE, 2), ["cx"])
-    model.add_all_qubit_readout_error(ReadoutError([[1 - READOUT_FLIP, READOUT_FLIP], [READOUT_FLIP, 1 - READOUT_FLIP]]))
+    flip = [[1 - READOUT_FLIP, READOUT_FLIP], [READOUT_FLIP, 1 - READOUT_FLIP]]
+    model.add_all_qubit_readout_error(ReadoutError(flip))
     return model
 
 

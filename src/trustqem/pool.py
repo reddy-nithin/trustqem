@@ -121,7 +121,8 @@ def simulate_pool(
     # one seed per (circuit, scale), drawn in the same order as the old loop, so any worker count gives the same pool
     seeds = [int(random_generator.integers(0, 2**31)) for _ in tasks]
     flat = run_sampling_tasks(tasks, seeds, simulators, config.shots_per_circuit)
-    probabilities = np.array(flat).reshape(len(records), len(config.noise_scale_factors), -1)  # (circuits, scales, 2**n)
+    # shape (circuits, scales, 2**n)
+    probabilities = np.array(flat).reshape(len(records), len(config.noise_scale_factors), -1)
     logger.info("pool %s: %d circuits in %.0fs", condition_name, len(records), time.time() - start_time)
     return pool_from_probabilities(records, condition_name, probabilities, config.shots_per_circuit, observables,
                                    observable_labels, sign_table)
