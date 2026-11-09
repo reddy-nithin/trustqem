@@ -63,24 +63,37 @@ simulated data, so every session is a real shift from training to hardware.
 
 ![The self-healing loop](docs/img/self-healing-loop.png)
 
-Every day about 30 canary circuits with known answers run first. A betting score (a conformal test martingale) grows
-when they look worse than the reference day. At 20 the alarm rings, and by Ville's inequality false alarms stay under
-1 in 20 however long you watch. On alarm, TrustQEM recalibrates on that day's canaries and watches from the new normal.
+Every day about 30 canary circuits with known answers run first. An alarm score (a conformal test martingale) grows
+when they miss more than on the reference day. At 20 the alarm rings, and by Ville's inequality false alarms on an
+unchanged chip stay under 1 in 20 however long you watch. On alarm, TrustQEM recalibrates on that day's canaries and
+watches from the new normal.
 
 ![self-healing replay on ibm_fez](results/poster/C4_hardware_healing_replay.png)
 
 Replayed on the hardware sessions in 200 random canary orders, the alarm fired on the first hardware day in 200 of 200
-and healed coverage from 0.667 to 0.902. Three days later it stayed quiet, and the old repair still held (0.890). At
-12 qubits it fired in 200 of 200 and healed 0.675 to 0.886.
+and healed coverage from 0.667 to 0.902. Three days later the chip still looked like the first hardware day, so there
+was no new alarm, and the repair still held (0.890). At 12 qubits it fired in 200 of 200 and healed 0.675 to 0.886.
 
 ## Scaling, and where it stops
 
 ![scaling from 4 to 12 qubits](results/poster/C2_scaling_three_drifts.png)
 
-In simulation the repair is complete at 4 qubits, and at 12 qubits under realistic FakeFez chip noise (0.88 to 0.93).
-Under strong gate-noise drift at 6 to 12 qubits it is only partial (about 0.81 to 0.85 instead of 0.90): small check
-circuits mostly answer exactly 0, and gate noise can't move a 0. A drift alarm on a simulated 156-qubit chip caught
-drift in 200 of 200 runs with 0 false alarms, but that tests the alarm only, not the error bars.
+The figure follows the error bars from 4 to 12 qubits under three kinds of drift, all in simulation:
+
+- **Thermal relaxation:** repaired at every size, close to the ideal yardstick (0.87 at 12 qubits).
+- **Heavy gate noise (2x):** only partly repaired at 6 to 12 qubits (0.80 to 0.86 instead of 0.90). Small check
+  circuits mostly answer exactly 0, and gate noise can't move a 0.
+- **IBM chip noise (FakeFez, a copy of ibm_fez's noise):** all five drifts repaired at 12 qubits (0.88 to 0.93). This
+  track was run at 4 and 12 qubits only.
+
+A drift alarm on a simulated 156-qubit chip caught drift in 200 of 200 runs with 0 false alarms, but that tests the
+alarm only, not the error bars.
+
+## Who gains
+
+Anyone running experiments on a cloud quantum computer gets error bars that stay honest from day to day, for the cost
+of 25 to 100 small check circuits. A laptop can check those circuits at any chip size, so the daily cost stays small
+as chips grow. Learned mitigation already gives accurate numbers; what it lacks is a way to know when to trust them.
 
 ## How it differs from prior work
 
@@ -92,10 +105,10 @@ drift in 200 of 200 runs with 0 false alarms, but that tests the alarm only, not
 
 ## Limitations
 
-- One chip, three sessions, about ±5 points each.
+- One chip, three sessions, 60 test circuits each, so every score is about ±5 points.
 - Plain unweighted recalibration also restored coverage on the hardware days, so the weighting is not singled out there.
-- The alarm catches mild drift only 23 to 63% of the time.
-- Error bars are untested beyond 12 qubits, and nothing here is claimed beyond that.
+- Very mild drift (gates 1.5x noisier) is often missed: the alarm caught it in 63% of runs at 4 qubits and 23% at 12.
+- Error bars are checked only up to 12 qubits; real chips have 100+, and nothing here is claimed beyond 12.
 
 ## Research practice
 

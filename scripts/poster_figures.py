@@ -1,4 +1,4 @@
-"""Poster-size figures (C1 to C8), each read straight from a results file. Writes PNG (300 dpi) and SVG to results/poster/.
+"""Poster figures (C1 to C8), each read straight from a results file. Writes PNG (300 dpi) and SVG to results/poster/.
 
 Usage: uv run python scripts/poster_figures.py
 """
@@ -83,13 +83,13 @@ def c1_hardware() -> None:
 
 
 def c2_scaling() -> None:
-    """Three drift types against qubit count: where the repair holds and where it falls short."""
+    """Two drift types against qubit count, plus IBM chip noise (FakeFez device track, 4 and 12 qubits only)."""
     qubits = (4, 6, 8, 10, 12)
     data = {n: load(f"results/drift/scale_q{n}/summary.json")["intervals"] for n in qubits}
     rich = load("results/twins_k16/scale_q12/summary.json")["intervals"]
-    panels = ("D4_thermal_relaxation", "D2_depolarizing_x2", "D6_combined")
+    panels = ("D4_thermal_relaxation", "D2_depolarizing_x2")
     fig, axes = plt.subplots(1, 3, figsize=(15, 5.2), sharey=True)
-    for axis, scenario in zip(axes, panels, strict=True):
+    for axis, scenario in zip(axes[:2], panels, strict=True):
         band(axis)
         for method, count, keep, colour, label in (("R0_frozen", 0, -1, GREY, "no fix"),
                                                    ("R1W_clifford_weighted", 100, 4, OURS, "TrustQEM"),
@@ -101,11 +101,32 @@ def c2_scaling() -> None:
         axis.set_title(SHORT[scenario])
         axis.set_xticks(qubits)
         axis.set_xlabel("qubits")
+    device_panel(axes[2], qubits)
     axes[0].set_ylabel("coverage after drift")
-    axes[0].set_ylim(0.38, 0.97)
+    axes[0].set_ylim(0.5, 0.97)
     axes[0].legend(loc="lower left", frameon=False, fontsize=12)
     save(fig, "C2_scaling_three_drifts", ["results/drift/scale_q{4..12}/summary.json",
-                                          "results/twins_k16/scale_q12/summary.json"])
+                                          "results/twins_k16/scale_q12/summary.json",
+                                          "results/device/full/summary.json",
+                                          "results/device/scale_q12/summary.json"])
+
+
+def device_panel(axis, ticks: tuple[int, ...]) -> None:
+    """IBM chip noise (FakeFez): mean over drifts E1 to E5 at 4 and 12 qubits, shaded min to max."""
+    device = {4: load("results/device/full/summary.json")["intervals"],
+              12: load("results/device/scale_q12/summary.json")["intervals"]}
+    drifts = ("E1_coherence_drop", "E2_bad_qubit", "E3_readout", "E4_gate_errors", "E5_combined")
+    sizes = sorted(device)
+    band(axis)
+    for method, count, keep, colour in (("R0_frozen", 0, -1, GREY), ("R1W_clifford_weighted", 100, 4, OURS),
+                                        ("R3_oracle", 100, -1, ORACLE)):
+        values = np.array([[entry(device[n], d, method, count, keep) for d in drifts] for n in sizes])
+        axis.fill_between(sizes, values.min(axis=1), values.max(axis=1), color=colour, alpha=0.15, lw=0)
+        axis.plot(sizes, values.mean(axis=1), "o-", color=colour, lw=2.5, ms=8)
+    axis.set_title("IBM chip noise")
+    axis.set_xticks(sizes)
+    axis.set_xlim(ticks[0] - 0.4, ticks[-1] + 0.4)
+    axis.set_xlabel("qubits")
 
 
 def c3_healing_timeline() -> None:
@@ -226,7 +247,7 @@ def c7_realism_ladder() -> None:
     fig, axis = plt.subplots(figsize=(11, 4))
     axis.axvspan(TARGET - BAND, TARGET + BAND, color="#e6e6e6", zorder=0)
     axis.axvline(TARGET, color="black", lw=1)
-    for y, (label, frozen, ours) in enumerate(reversed(rows)):
+    for y, (_label, frozen, ours) in enumerate(reversed(rows)):
         for f, o in zip(frozen, ours, strict=True):
             axis.annotate("", xy=(o, y), xytext=(f, y), arrowprops={"arrowstyle": "->", "color": "#c9a3b8", "lw": 1.2})
         axis.scatter(frozen, [y] * len(frozen), s=110, color=GREY, zorder=3, label="no fix" if y == 0 else None)

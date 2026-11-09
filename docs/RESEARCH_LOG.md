@@ -2,7 +2,7 @@
 
 Dated lab notebook: what was done, what was found, what went wrong. Newest entries at the bottom.
 
-## 2026-10-24 · Baseline reproduced
+## 2026-10-24: Baseline reproduced
 
 Repo and uv environment set up with the package versions Luke Miller's starter notebook was tested on
 (qiskit 2.6.1, qiskit-aer 0.18.0, scikit-learn 1.9.1). His notebook #4 code was split into `src/trustqem/` modules.
@@ -22,15 +22,15 @@ draws), 4 qubits, depolarizing noise, 1000 shots per scale, 100 unseen test circ
 Pain point: enabling INFO logging globally also turned on qiskit's transpiler logs (a 2.4 MB notebook). Fixed by
 enabling INFO for the `trustqem` logger only.
 
-## 2026-10-25 · Pilot (profile `pilot`, 5 repeats, 4 qubits, α = 0.1)
+## 2026-10-25: Pilot (profile `pilot`, 5 repeats, 4 qubits, α = 0.1)
 
 Run: `uv run trustqem run drift --profile pilot` (3.5 min on an M2). Results: `results/drift/pilot/`.
 
 **H1 holds.** Monday conformal coverage 0.888 ± 0.010 (target 0.90). ZNE + bootstrap covers 0.822 ± 0.015.
 
-**H2 holds, strongly.** Frozen Monday intervals under drift: depolarizing ×2 → 0.668, thermal relaxation → 0.684,
-combined → 0.463. ZNE + bootstrap collapses just as badly (0.673, 0.693, 0.486), so today's standard practice has the
-same problem. The learned model's MAE roughly doubles (0.034 → 0.066, 0.119 in the combined scenario).
+**H2 holds, strongly.** Frozen Monday intervals under drift: depolarizing ×2 to 0.668, thermal relaxation to 0.684,
+combined to 0.463. ZNE + bootstrap collapses just as badly (0.673, 0.693, 0.486), so today's standard practice has the
+same problem. The learned model's MAE roughly doubles (0.034 to 0.066, 0.119 in the combined scenario).
 
 **H3 is mixed: Clifford recalibration closes most of the gap but systematically falls short.** At K = 100:
 
@@ -55,7 +55,7 @@ coverage). The Clifford set is a covariate-shifted calibration set. Proposed fix
 prediction under covariate shift (Tibshirani et al., 2019), reweighting Clifford rows so their distribution of
 observed features (noisy values, depth) matches the target circuits'. Those features are available on hardware.
 
-## 2026-10-25 · Weighted recalibration (Amendment 1) and the confirmation run (profile `full`)
+## 2026-10-25: Weighted recalibration (Amendment 1) and the confirmation run (profile `full`)
 
 R1W was developed on the pilot pools and frozen in Amendment 1 (commit `90bb355`) before this run. Fresh pools,
 seed 2026: 500 Monday circuits, 400 Tuesday circuits per scenario, all seven scenarios, twins with k = 0, 2, 4, 8,
@@ -91,7 +91,7 @@ thermal 0.674, readout 0.788, combined 0.446. ZNE + bootstrap also fails everywh
 
 **R4 (retrain) comparison.** Retraining on N = 50 to 200 labeled drifted circuits, plus 100 more for calibration,
 also gives 0.88 to 0.90 coverage, with widths 10 to 25% narrower than R1W, because the retrained model is more
-accurate (combined scenario MAE 0.117 → 0.088). The honest trade-off is that R4 needs 150 to 300 circuits with known
+accurate (combined scenario MAE 0.117 to 0.088). The honest trade-off is that R4 needs 150 to 300 circuits with known
 ideal values. For non-Clifford circuits at scale, no classical computer can supply those. R1W needs 25 to 100
 near-Clifford circuits, which it can.
 
@@ -107,7 +107,7 @@ the hardest to detect: depolarizing ×1.5 reaches 0.85 only with k = 8 (0.15 to 
   rows is the likely cause; per-circuit (max-score) calibration would test that.
 - Simulation only, 4 qubits. Stage 3 adds device-realistic noise and gate folding.
 
-## 2026-10-25 · Stage 3: device-realistic noise and gate folding (Amendment 2)
+## 2026-10-25: Stage 3: device-realistic noise and gate folding (Amendment 2)
 
 **What changed.** Monday is now the FakeFez calibration (IBM Heron r2 snapshot dated 2025-02-26, from
 qiskit-ibm-runtime 0.51.0) on the best 4-qubit line, physical qubits 136, 143, 142, 141. Each qubit has its own T1,
